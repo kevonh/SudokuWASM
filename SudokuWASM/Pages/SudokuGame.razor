@@ -1,0 +1,509 @@
+﻿@page "/"
+@using System.Timers
+@inject IJSRuntime JSRuntime
+@inject ILogger<SudokuGame> Logger
+@implements IDisposable
+
+<div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div class="w-full mx-auto px-1 py-1 sm:px-4 sm:py-4">    
+        @if (isLoading)
+        {
+            <!-- Stylish Loading State -->
+            <div class="flex items-center justify-center min-h-[70vh]">
+                <div class="text-center">
+                    <!-- Animated Sudoku Grid Icon -->
+                    <div class="mb-8">
+                        <div class="inline-block relative">
+                            <!-- Outer ring with rotating animation -->
+                            <div class="w-24 h-24 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin"></div>
+                            <!-- Inner sudoku-like grid -->
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <div class="w-12 h-12 grid grid-cols-3 gap-0.5 bg-purple-600 p-1 rounded opacity-80">
+                                    @for (int i = 0; i < 9; i++)
+                                    {
+                                        <div class="bg-white rounded-sm animate-pulse" style="animation-delay: @(i * 0.1)s;"></div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Loading Text -->
+                    <h2 class="text-3xl sm:text-4xl font-bold text-gray-800 mb-4">
+                        <span class="bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                            Loading...
+                        </span>
+                    </h2>
+                    
+                    <!-- Subtitle -->
+                    <p class="text-lg text-gray-600 mb-6">
+                        Preparing your Sudoku experience
+                    </p>
+                    
+                    <!-- Animated dots -->
+                    <div class="flex justify-center space-x-2">
+                        <div class="w-2 h-2 bg-purple-600 rounded-full animate-bounce" style="animation-delay: 0s;"></div>
+                        <div class="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style="animation-delay: 0.1s;"></div>
+                        <div class="w-2 h-2 bg-indigo-600 rounded-full animate-bounce" style="animation-delay: 0.2s;"></div>
+                    </div>
+                    
+                    <!-- Background decoration -->
+                    <div class="absolute inset-0 overflow-hidden pointer-events-none">
+                        <div class="absolute -top-40 -right-40 w-80 h-80 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
+                        <div class="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse" style="animation-delay: 1s;"></div>
+                    </div>
+                </div>
+            </div>
+        }
+        else if (board != null)
+        {
+            <!-- Existing game UI -->
+            <!-- Mobile Layout (hidden on md and above) -->
+            <div class="md:hidden flex flex-col gap-2 items-center">
+                <!-- 1. Sudoku Grid - FIRST -->
+                <div class="w-full max-w-sm">
+                    <div class="grid grid-cols-3 gap-1 bg-gray-800 p-1 sm:p-2 rounded-lg">
+                        @for (int blockRow = 0; blockRow < 3; blockRow++)
+                        {
+                            @for (int blockCol = 0; blockCol < 3; blockCol++)
+                            {
+                                <div class="grid grid-cols-3 gap-0.5 bg-gray-800 rounded">
+                                    @for (int cellRow = 0; cellRow < 3; cellRow++)
+                                    {
+                                        @for (int cellCol = 0; cellCol < 3; cellCol++)
+                                        {
+                                            var row = blockRow * 3 + cellRow;
+                                            var col = blockCol * 3 + cellCol;
+                                            var cellClass = GetCellCSS(row, col);
+                                            var isWrong = wrongCells[row, col];
+
+                                            <div class="@cellClass" @onclick="() => OnCellClick(row, col)" @ontouchstart="() => OnCellClick(row, col)">
+                                                @if (board.FixedCells[row, col] || board.HintCells[row, col] || board.CorrectlySolvedCells[row, col])
+                                                {
+                                                    <span class="text-sm sm:text-base md:text-lg">@(board.Grid[row, col] == 0 ? "" : board.Grid[row, col])</span>
+                                                }
+                                                else if (board.Grid[row, col] != 0)
+                                                {
+                                                    <span class="text-sm sm:text-base md:text-lg @(isWrong ? "text-red-600 font-bold" : "")">@board.Grid[row, col]</span>
+                                                }
+                                                else
+                                                {
+                                                    <div class="grid grid-cols-3 gap-0 text-[8px] sm:text-xs text-gray-400 w-full h-full">
+                                                        @for (int n = 1; n <= 9; n++)
+                                                        {
+                                                            <div class="flex items-center justify-center">
+                                                                <span class="@(board.Notes[row, col].Contains(n) ? "text-gray-600" : "opacity-0")">@n</span>
+                                                            </div>
+                                                        }
+                                                    </div>
+                                                }
+                                            </div>
+                                        }
+                                    }
+                                </div>
+                            }
+                        }
+                    </div>
+                </div>
+
+                <!-- 2. Toolbar - 5 buttons WITH Stats -->
+                <div class="w-full max-w-sm">
+                    <div class="bg-white rounded-lg shadow-lg p-2">
+                        <div class="grid grid-cols-5 gap-1">
+                            <button class="bg-gray-100 hover:bg-gray-200 active:bg-gray-300 text-gray-700 font-medium py-2 px-1 rounded-lg transition-all duration-200 flex items-center justify-center touch-manipulation @(CanEditSelectedCell && !isGameOver && !isGameWon ? "" : "opacity-50")" 
+                                    @onclick="Undo" disabled="@(isGameOver || isGameWon)" title="Undo">
+                                <i class="bi bi-arrow-counterclockwise text-sm"></i>
+                            </button>
+                            <button class="bg-gray-100 hover:bg-gray-200 active:bg-gray-300 text-gray-700 font-medium py-2 px-1 rounded-lg transition-all duration-200 flex items-center justify-center touch-manipulation @(CanEditSelectedCell && !isGameOver && !isGameWon ? "" : "opacity-50")" 
+                                    @onclick="Erase" disabled="@(!CanEditSelectedCell || isGameOver || isGameWon)" title="Erase">
+                                <i class="bi bi-eraser text-sm"></i>
+                            </button>
+                            <button class="font-medium py-2 px-1 rounded-lg transition-all duration-200 flex items-center justify-center touch-manipulation @(pencilMode ? "bg-blue-500 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300") @(isGameOver || isGameWon ? "opacity-50" : "")" 
+                                    @onclick="TogglePencilMode" disabled="@(isGameOver || isGameWon)" title="Notes">
+                                <i class="bi bi-pencil text-sm"></i>
+                            </button>
+                            <button class="bg-yellow-100 hover:bg-yellow-200 active:bg-yellow-300 text-yellow-700 font-medium py-2 px-1 rounded-lg transition-all duration-200 flex items-center justify-center touch-manipulation @(board == null || board.IsComplete() || isGameOver || isGameWon ? "opacity-50" : "")" 
+                                    @onclick="GiveHint" disabled="@(board == null || board.IsComplete() || isGameOver || isGameWon)" title="Hint">
+                                <i class="bi bi-lightbulb text-sm"></i>
+                            </button>
+                            <button class="bg-gray-100 hover:bg-gray-200 active:bg-gray-300 text-gray-700 font-medium py-2 px-1 rounded-lg transition-all duration-200 flex items-center justify-center touch-manipulation" 
+                                    @onclick="ShowStatisticsAsync" title="Stats">
+                                <i class="bi bi-bar-chart text-sm"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. Number Pad -->
+                <div class="w-full max-w-sm">
+                    <div class="bg-white rounded-lg shadow-lg p-2">
+                        <div class="grid grid-cols-3 gap-2">
+                            @for (int i = 1; i <= 9; i++)
+                            {
+                                var number = i;
+                                var isDisabled = IsNumberPadButtonDisabled(number);
+                                var buttonClasses = isDisabled 
+                                    ? "bg-gray-200 text-gray-400 font-bold py-2 sm:py-3 px-2 sm:px-3 rounded-lg transition-all duration-200 text-lg sm:text-xl opacity-50 cursor-not-allowed touch-manipulation"
+                                    : "bg-blue-100 hover:bg-blue-200 active:bg-blue-300 text-blue-700 font-bold py-2 sm:py-3 px-2 sm:px-3 rounded-lg transition-all duration-200 text-lg sm:text-xl touch-manipulation";
+                                
+                                <button class="@buttonClasses"
+                                        @onclick="() => OnNumberPadClick(number)"
+                                        disabled="@isDisabled"
+                                        title="@(isDisabled ? $"All 9 {number}'s are already placed" : $"Place {number}")">
+                                    @number
+                                </button>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. Header Stats - NO Stats button -->
+                <div class="w-full max-w-sm">
+                    <div class="bg-white rounded-lg shadow-lg p-2">
+                        <div class="flex justify-between items-center text-sm">
+                            <div class="text-center">
+                                <div class="text-lg font-bold text-purple-600 @(isPointsAnimating ? "animate-pulse scale-110 transition-transform duration-500" : "transition-transform duration-200")">@DisplayScore</div>
+                                <div class="text-xs text-gray-500">SCORE</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-lg font-bold text-gray-800">@elapsedTime</div>
+                                <div class="text-xs text-gray-500">TIME</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-lg font-bold @(wrongGuessCount >= maxWrongGuesses ? "text-red-600" : "text-gray-800")">@wrongGuessCount/@maxWrongGuesses</div>
+                                <div class="text-xs text-gray-500">WRONG</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-lg font-bold text-blue-600">@hintCount</div>
+                                <div class="text-xs text-gray-500">HINTS</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 5. Difficulty + New Game - NO STATS -->
+                <div class="w-full max-w-sm">
+                    <div class="bg-white rounded-lg shadow-lg p-2 space-y-2">
+                        <!-- Difficulty Selection -->
+                        <div class="grid grid-cols-4 gap-1">
+                            @foreach (var diff in new[] { "Easy", "Medium", "Hard", "Expert" })
+                            {
+                                <button class="font-medium py-2 px-1 rounded-lg transition-all duration-200 text-xs touch-manipulation @(selectedDifficulty == diff ? "bg-indigo-500 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300")"
+                                        @onclick="() => SetDifficulty(diff)">
+                                    @diff
+                                </button>
+                            }
+                        </div>
+
+                        <!-- New Game Button -->
+                        <button class="w-full bg-green-500 hover:bg-green-600 active:bg-green-700 text-white font-bold py-2 px-3 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2 touch-manipulation"
+                                @onclick="GenerateNewGame">
+                            <i class="bi bi-plus-circle"></i>
+                            New Game
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Desktop Layout (hidden on mobile and small screens) -->
+            <div class="hidden md:block w-full">
+                <div class="flex gap-8 items-start justify-center max-w-6xl mx-auto">
+                    <!-- Large Grid for Desktop -->
+                    <div class="flex-shrink-0">
+                        <div class="bg-white rounded-xl shadow-2xl p-6 border border-gray-200">
+                            <div class="grid grid-cols-3 gap-1 bg-gray-800 p-2 rounded-lg">
+                                @for (int blockRow = 0; blockRow < 3; blockRow++)
+                                {
+                                    @for (int blockCol = 0; blockCol < 3; blockCol++)
+                                    {
+                                        <div class="grid grid-cols-3 gap-0.5 bg-gray-800 rounded">
+                                            @for (int cellRow = 0; cellRow < 3; cellRow++)
+                                            {
+                                                @for (int cellCol = 0; cellCol < 3; cellCol++)
+                                                {
+                                                    var row = blockRow * 3 + cellRow;
+                                                    var col = blockCol * 3 + cellCol;
+                                                    var cellClass = GetCellCSS(row, col);
+                                                    var isWrong = wrongCells[row, col];
+
+                                                    <div class="@cellClass" @onclick="() => OnCellClick(row, col)">
+                                                        @if (board!.FixedCells[row, col] || board.HintCells[row, col] || board.CorrectlySolvedCells[row, col])
+                                                        {
+                                                            <span>@(board.Grid[row, col] == 0 ? "" : board.Grid[row, col])</span>
+                                                        }
+                                                        else if (board.Grid[row, col] != 0)
+                                                        {
+                                                            <span class="@(isWrong ? "text-red-600 font-bold" : "")">@board.Grid[row, col]</span>
+                                                        }
+                                                        else
+                                                        {
+                                                            <div class="grid grid-cols-3 gap-0 text-xs text-gray-400 w-full h-full">
+                                                                @for (int n = 1; n <= 9; n++)
+                                                                {
+                                                                    <div class="flex items-center justify-center text-xs">
+                                                                        <span class="@(board.Notes[row, col].Contains(n) ? "text-gray-600" : "opacity-0")">@n</span>
+                                                                    </div>
+                                                                }
+                                                            </div>
+                                                        }
+                                                    </div>
+                                                }
+                                            }
+                                        </div>
+                                    }
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Desktop Controls Panel -->
+                    <div class="flex-1 max-w-md space-y-4">
+                        <!-- Game Status - All on Single Line -->
+                        <div class="bg-white rounded-xl shadow-lg p-4">
+                            <!-- Single line stats - Score, Time, Wrong, Hints -->
+                            <div class="flex justify-between items-center text-sm">
+                                <div class="text-center">
+                                    <div class="text-xl font-bold text-purple-600 @(isPointsAnimating ? "animate-pulse scale-110 transition-transform duration-500" : "transition-transform duration-200")">@DisplayScore</div>
+                                    <div class="text-xs text-gray-500">SCORE</div>
+                                </div>
+                                <div class="text-center">
+                                    <div class="font-bold text-gray-800">@elapsedTime</div>
+                                    <div class="text-xs text-gray-500">TIME</div>
+                                </div>
+                                <div class="text-center">
+                                    <div class="font-bold @(wrongGuessCount >= maxWrongGuesses ? "text-red-600" : "text-gray-800")">@wrongGuessCount/@maxWrongGuesses</div>
+                                    <div class="text-xs text-gray-500">WRONG</div>
+                                </div>
+                                <div class="text-center">
+                                    <div class="font-bold text-blue-600">@hintCount</div>
+                                    <div class="text-xs text-gray-500">HINTS</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Desktop Controls -->
+                        <div class="bg-white rounded-xl shadow-lg p-4 space-y-4">
+                            <!-- Action Buttons - Now with Stats button (5 buttons) -->
+                            <div class="grid grid-cols-5 gap-2">
+                                <button class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-3 px-3 rounded-lg transition-all duration-200 flex items-center justify-center @(CanEditSelectedCell && !isGameOver && !isGameWon ? "" : "opacity-50 cursor-not-allowed")" 
+                                        @onclick="Undo" title="Undo" disabled="@(isGameOver || isGameWon)">
+                                    <i class="bi bi-arrow-counterclockwise text-lg"></i>
+                                </button>
+                                <button class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-3 px-3 rounded-lg transition-all duration-200 flex items-center justify-center @(CanEditSelectedCell && !isGameOver && !isGameWon ? "" : "opacity-50 cursor-not-allowed")" 
+                                        @onclick="Erase" title="Erase" disabled="@(!CanEditSelectedCell || isGameOver || isGameWon)">
+                                    <i class="bi bi-eraser text-lg"></i>
+                                </button>
+                                <button class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-3 px-3 rounded-lg transition-all duration-200 flex items-center justify-center @(pencilMode ? "!bg-blue-500 !text-white" : "") @(isGameOver || isGameWon ? "opacity-50 cursor-not-allowed" : "")" 
+                                        @onclick="TogglePencilMode" title="Pencil Mode" disabled="@(isGameOver || isGameWon)">
+                                    <i class="bi bi-pencil text-lg"></i>
+                                </button>
+                                <button class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-3 px-3 rounded-lg transition-all duration-200 flex items-center justify-center @(board == null || board.IsComplete() || isGameOver || isGameWon ? "opacity-50 cursor-not-allowed" : "")" 
+                                        @onclick="GiveHint" title="Hint" disabled="@(board == null || board.IsComplete() || isGameOver || isGameWon)">
+                                    <i class="bi bi-lightbulb text-lg"></i>
+                                </button>
+                                <button class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-3 px-3 rounded-lg transition-all duration-200 flex items-center justify-center" 
+                                        @onclick="ShowStatisticsAsync" title="Statistics">
+                                    <i class="bi bi-bar-chart text-lg"></i>
+                                </button>
+                            </div>
+
+                            <!-- Number Pad -->
+                            <div>
+                                <div class="grid grid-cols-3 gap-2">
+                                    @for (int i = 1; i <= 9; i++)
+                                    {
+                                        var number = i;
+                                        var isDisabled = IsNumberPadButtonDisabled(number);
+                                        var buttonClasses = isDisabled 
+                                            ? "bg-gray-200 text-gray-400 font-bold py-4 px-4 rounded-lg transition-all duration-200 text-xl opacity-50 cursor-not-allowed"
+                                            : "bg-blue-100 hover:bg-blue-200 text-blue-700 font-bold py-4 px-4 rounded-lg transition-all duration-200 text-xl";
+                                        
+
+                                        <button class="@buttonClasses"
+                                                @onclick="() => OnNumberPadClick(number)"
+                                                disabled="@isDisabled"
+                                                title="@(isDisabled ? $"All 9 {number}'s are already placed" : $"Place {number}")">
+                                            @number
+                                        </button>
+                                    }
+                                </div>
+                            </div>
+
+                            <!-- Difficulty Selection - 4 across with minimal padding -->
+                            <div>
+                                <div class="grid grid-cols-4 gap-1">
+                                    @foreach (var diff in new[] { "Easy", "Medium", "Hard", "Expert" })
+                                    {
+                                        <button class="font-medium py-2 px-2 rounded-lg transition-all duration-200 text-sm @(selectedDifficulty == diff ? "bg-indigo-500 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200")"
+                                                @onclick="() => SetDifficulty(diff)">
+                                            @diff
+                                        </button>
+                                    }
+                                </div>
+                            </div>
+
+                            <!-- Game Actions - Only New Game button -->
+                            <div>
+                                <button class="w-full bg-green-500 hover:bg-green-600 text-white font-bold p-2 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2"
+                                        @onclick="GenerateNewGame">
+                                    <i class="bi bi-plus-circle"></i>
+                                    New Game
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Statistics Modal -->
+    @if (showStatistics)
+    {
+        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
+            <div class="bg-white rounded-xl p-4 sm:p-6 w-full max-w-md sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+                <div class="flex justify-between items-center mb-4 sm:mb-6">
+                    <h2 class="text-xl sm:text-2xl font-bold text-gray-800">Game Statistics</h2>
+                    <button class="text-gray-400 hover:text-gray-600 p-2 touch-manipulation" @onclick="() => showStatistics = false">
+                        <i class="bi bi-x-lg text-lg sm:text-xl"></i>
+                    </button>
+                </div>
+
+                <!-- Mobile-optimized stats content -->
+                <div class="space-y-4 sm:space-y-6">
+                    <!-- Overall Stats -->
+                    <div>
+                        <h3 class="text-base sm:text-lg font-semibold text-gray-700 mb-3">Overall Performance</h3>
+                        <div class="grid grid-cols-2 gap-3 sm:gap-4">
+                            <div class="text-center p-3 sm:p-4 bg-blue-50 rounded-lg">
+                                <div class="text-xl sm:text-2xl font-bold text-blue-600">@gameStatistics.GamesPlayed</div>
+                                <div class="text-xs sm:text-sm text-gray-600">Games Played</div>
+                            </div>
+                            <div class="text-center p-3 sm:p-4 bg-green-50 rounded-lg">
+                                <div class="text-xl sm:text-2xl font-bold text-green-600">@gameStatistics.GamesWon</div>
+                                <div class="text-xs sm:text-sm text-gray-600">Games Won</div>
+                            </div>
+                            <div class="text-center p-3 sm:p-4 bg-yellow-50 rounded-lg">
+                                <div class="text-xl sm:text-2xl font-bold text-yellow-600">@gameStatistics.PerfectGames</div>
+                                <div class="text-xs sm:text-sm text-gray-600">Perfect Games</div>
+                            </div>
+                            <div class="text-center p-3 sm:p-4 bg-purple-50 rounded-lg">
+                                <div class="text-xl sm:text-2xl font-bold text-purple-600">@(gameStatistics.GamesPlayed > 0 ? (gameStatistics.GamesWon * 100 / gameStatistics.GamesPlayed) : 0)%</div>
+                                <div class="text-xs sm:text-sm text-gray-600">Win Rate</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Personal Bests -->
+                    <div>
+                        <h3 class="text-base sm:text-lg font-semibold text-gray-700 mb-3">Personal Bests</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                            <div class="p-3 sm:p-4 bg-indigo-50 rounded-lg">
+                                <div class="text-lg sm:text-xl font-bold text-indigo-600">@gameStatistics.BestScore</div>
+                                <div class="text-xs sm:text-sm text-gray-600">Highest Score</div>
+                            </div>
+                            <div class="p-3 sm:p-4 bg-cyan-50 rounded-lg">
+                                <div class="text-lg sm:text-xl font-bold text-cyan-600">@(gameStatistics.BestTime == TimeSpan.MaxValue ? "Not Set" : gameStatistics.BestTime.ToString(@"mm\:ss"))</div>
+                                <div class="text-xs sm:text-sm text-gray-600">Fastest Completion</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4 sm:mt-6 flex flex-col sm:flex-row justify-between gap-2 sm:gap-4">
+                    <button class="bg-red-500 hover:bg-red-600 active:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 touch-manipulation"
+                            @onclick="() => showConfirmClearStats = true">
+                        <i class="bi bi-trash mr-2"></i>Clear Stats
+                    </button>
+                    <button class="bg-blue-500 hover:bg-blue-600 active:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 touch-manipulation"
+                            @onclick="() => showStatistics = false">
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Clear Stats Confirmation Modal -->
+    @if (showConfirmClearStats)
+    {
+        <div class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-[60] p-4">
+            <div class="bg-white rounded-xl p-6 w-full max-w-sm text-center">
+                <div class="text-4xl mb-4 text-red-500">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-800 mb-2">Clear All Statistics?</h3>
+                <p class="text-gray-600 mb-6">This will permanently delete all your game statistics, scores, and progress. This action cannot be undone.</p>
+                <div class="flex gap-3 justify-center">
+                    <button class="bg-gray-300 hover:bg-gray-400 text-gray-700 font-medium py-2 px-4 rounded-lg transition-colors duration-200"
+                            @onclick="() => showConfirmClearStats = false">
+                        Cancel
+                    </button>
+                    <button class="bg-red-500 hover:bg-red-600 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200"
+                            @onclick="ClearStatsAsync">
+                        Yes, Clear All
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Victory Modal - Mobile Optimized -->
+    @if (isGameWon)
+    {
+        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div class="bg-white rounded-xl p-6 sm:p-8 w-full max-w-sm sm:max-w-md text-center">
+                <div class="text-4xl sm:text-6xl mb-4 text-green-500">
+                    <i class="bi bi-trophy-fill"></i>
+                </div>
+                @if (hintCount == 0 && wrongGuessCount == 0)
+                {
+                    <div class="text-xl sm:text-2xl mb-2">🎉 PERFECT GAME! 🎉</div>
+                }
+                <h2 class="text-2xl sm:text-3xl font-bold text-green-600 mb-2">Puzzle Complete!</h2>
+                <div class="text-3xl sm:text-4xl font-bold text-purple-600 mb-2">@DisplayScore</div>
+                <div class="text-sm text-gray-500 mb-4">FINAL SCORE</div>
+                <div class="grid grid-cols-3 gap-3 sm:gap-4 mb-6 text-sm">
+                    <div class="text-center">
+                        <div class="text-lg sm:text-xl font-bold text-gray-700">@elapsedTime</div>
+                        <div class="text-gray-500">Time</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-lg sm:text-xl font-bold text-red-600">@wrongGuessCount</div>
+                        <div class="text-gray-500">Wrong</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-lg sm:text-xl font-bold text-blue-600">@hintCount</div>
+                        <div class="text-gray-500">Hints</div>
+                    </div>
+                </div>
+                <div class="text-base sm:text-lg font-semibold text-gray-700 mb-6">@selectedDifficulty Difficulty</div>
+                <button class="bg-green-500 hover:bg-green-600 active:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-200 flex items-center gap-2 mx-auto touch-manipulation"
+                        @onclick="GenerateNewGame">
+                    <span>Play Again</span>
+                    <i class="bi bi-arrow-clockwise"></i>
+                </button>
+            </div>
+        </div>
+    }
+
+    <!-- Game Over Modal - Mobile Optimized -->
+    @if (isGameOver)
+    {
+        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div class="bg-white rounded-xl p-6 sm:p-8 w-full max-w-sm text-center">
+                <div class="text-4xl sm:text-6xl mb-4 text-red-500">
+                    <i class="bi bi-emoji-frown-fill"></i>
+                </div>
+                <h2 class="text-xl sm:text-2xl font-bold text-gray-800 mb-2">Game Over</h2>
+                <p class="text-gray-600 mb-6">Too many wrong guesses!</p>
+                <button class="bg-blue-500 hover:bg-blue-600 active:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg transition-colors duration-200 flex items-center gap-2 mx-auto touch-manipulation"
+                        @onclick="GenerateNewGame">
+                    <span>Try Again</span>
+                    <i class="bi bi-arrow-clockwise"></i>
+                </button>
+            </div>
+        </div>
+    }
+</div>
+

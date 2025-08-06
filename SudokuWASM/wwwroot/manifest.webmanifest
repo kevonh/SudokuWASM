@@ -1,0 +1,27 @@
+{
+  "name": "Sudoku - Offline Puzzle Game",
+  "short_name": "Sudoku",
+  "id": "./",
+  "start_url": "./",
+  "display": "fullscreen",
+  "screen_orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#6366f1",
+  "prefer_related_applications": false,
+  "categories": ["games", "entertainment"],
+  "description": "Play Sudoku puzzles offline anytime, anywhere",
+  "icons": [
+    {
+      "src": "icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    }
+  ]
+}

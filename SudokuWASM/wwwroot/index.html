@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <title>Sudoku</title>
+    <meta name="description" content="Play Sudoku - An offline-capable puzzle game" />
+    <base href="/" />
+    <link rel="stylesheet" href="tailwind.css" />
+    <link rel="stylesheet" href="css/app.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" />
+    <link rel="icon" type="image/png" href="favicon.png" />
+    <link href="SudokuWASM.styles.css" rel="stylesheet" />
+    <link href="manifest.webmanifest" rel="manifest" />
+    <link rel="apple-touch-icon" sizes="512x512" href="icon-512.png" />
+    <link rel="apple-touch-icon" sizes="192x192" href="icon-192.png" />
+    <meta name="theme-color" content="#03173d" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Sudoku" />
+</head>
+
+<body>
+    <div id="app">
+        <div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+            <div class="w-full mx-auto px-1 py-1 sm:px-4 sm:py-4">
+                <div class="flex items-center justify-center min-h-[70vh]">
+                    <div class="text-center">
+                        <!-- Animated Sudoku Grid Icon -->
+                        <div class="mb-8">
+                            <div class="inline-block relative">
+                                <!-- Outer ring with rotating animation -->
+                                <div class="w-24 h-24 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin"></div>
+                                <!-- Inner sudoku-like grid -->
+                                <div class="absolute inset-0 flex items-center justify-center">
+                                    <div class="w-12 h-12 grid grid-cols-3 gap-0.5 bg-purple-600 p-1 rounded opacity-80">
+                                        <div class="bg-white rounded-sm animate-pulse" style="animation-delay: 0s;"></div>
+                                        <div class="bg-white rounded-sm animate-pulse" style="animation-delay: 0.1s;"></div>
+                                        <div class="bg-white rounded-sm animate-pulse" style="animation-delay: 0.2s;"></div>
+                                        <div class="bg-white rounded-sm animate-pulse" style="animation-delay: 0.3s;"></div>
+                                        <div class="bg-white rounded-sm animate-pulse" style="animation-delay: 0.4s;"></div>
+                                        <div class="bg-white rounded-sm animate-pulse" style="animation-delay: 0.5s;"></div>
+                                        <div class="bg-white rounded-sm animate-pulse" style="animation-delay: 0.6s;"></div>
+                                        <div class="bg-white rounded-sm animate-pulse" style="animation-delay: 0.7s;"></div>
+                                        <div class="bg-white rounded-sm animate-pulse" style="animation-delay: 0.8s;"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Loading Text -->
+                        <h2 class="text-3xl sm:text-4xl font-bold text-gray-800 mb-4">
+                            <span class="bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                                Loading...
+                            </span>
+                        </h2>
+
+                        <!-- Subtitle -->
+                        <p class="text-lg text-gray-600 mb-6">
+                            Preparing your Sudoku experience
+                        </p>
+
+                        <!-- Animated dots -->
+                        <div class="flex justify-center space-x-2">
+                            <div class="w-2 h-2 bg-purple-600 rounded-full animate-bounce" style="animation-delay: 0s;"></div>
+                            <div class="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style="animation-delay: 0.1s;"></div>
+                            <div class="w-2 h-2 bg-indigo-600 rounded-full animate-bounce" style="animation-delay: 0.2s;"></div>
+                        </div>
+
+                        <!-- Background decoration -->
+                        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+                            <div class="absolute -top-40 -right-40 w-80 h-80 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
+                            <div class="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse" style="animation-delay: 1s;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="blazor-error-ui">
+        An unhandled error has occurred.
+        <a href="." class="reload">Reload</a>
+        <span class="dismiss"><i class="bi bi-x-lg"></i></span>
+    </div>
+    <script src="_framework/blazor.webassembly.js"></script>
+    <script>navigator.serviceWorker.register('service-worker.js');</script>
+</body>
+
+</html>
