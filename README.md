@@ -34,46 +34,46 @@ This project follows a clean, component-based architecture utilizing modern web 
 
 ```
 SudokuWASM/
-??? Components/               # Reusable Blazor components
-?   ??? DesktopGameLayout.razor    # Desktop-optimized layout
-?   ??? MobileGameLayout.razor     # Mobile-optimized layout
-?   ??? SudokuGrid.razor           # Main game grid component
-?   ??? GameControls.razor         # Game control buttons
-?   ??? NumberPad.razor            # Number input interface
-?   ??? ScoreArea.razor            # Score and statistics display
-?   ??? DifficultySelector.razor   # Difficulty selection
-?   ??? LoadingScreen.razor        # Loading animation
-?   ??? Modals/                    # Modal components
-?       ??? ConfirmationModal.razor
-?       ??? GameOverModal.razor
-?       ??? VictoryModal.razor
-?       ??? StatisticsModal.razor
-?       ??? PauseOverlay.razor
-??? Pages/                   # Blazor pages
-?   ??? SudokuGame.razor          # Main game page
-?   ??? SudokuGame.razor.cs       # Game logic code-behind
-??? Services/                # Business logic and utilities
-?   ??? IGamePersistenceService.cs           # Persistence interface
-?   ??? LocalStorageGamePersistenceService.cs # Local storage implementation
-?   ??? GameStatePersistenceService.cs       # Game state management
-?   ??? GameScoringService.cs                # Scoring calculations
-?   ??? GameTimingService.cs                 # Timer functionality
-?   ??? GameAnimationService.cs              # Animation utilities
-?   ??? CellStylingService.cs                # Dynamic styling
-??? Models/                  # Data models
-?   ??? GameState.cs              # Game state and statistics models
-??? Core Game Logic/         # Sudoku engine
-?   ??? SudokuBoard.cs            # Main board logic
-?   ??? SudokuSolver.cs           # Puzzle generation and solving
-??? wwwroot/                 # Static web assets
-?   ??? index.html               # Main HTML page
-?   ??? manifest.webmanifest     # PWA manifest
-?   ??? service-worker.js        # Service worker for offline support
-?   ??? tailwind.css            # Compiled Tailwind styles
-?   ??? css/app.css             # Custom styles
-??? Shared/                  # Shared components
-    ??? GameErrorBoundary.razor   # Error handling
+|-- Components/               # Reusable Blazor components
+|   |-- DesktopGameLayout.razor    # Desktop-optimized layout
+|   |-- MobileGameLayout.razor     # Mobile-optimized layout
+|   |-- SudokuGrid.razor           # Main game grid component
+|   |-- GameControls.razor         # Game control buttons
+|   |-- NumberPad.razor            # Number input interface
+|   |-- ScoreArea.razor            # Score and statistics display
+|   |-- DifficultySelector.razor   # Difficulty selection
+|   |-- LoadingScreen.razor        # Loading animation
+|   |-- ConfirmationModal.razor    # Confirmation dialog
+|   |-- GameOverModal.razor        # Game over screen
+|   |-- VictoryModal.razor         # Victory celebration
+|   |-- StatisticsModal.razor      # Game statistics view
+|   `-- PauseOverlay.razor         # Pause screen overlay
+|-- Pages/                   # Blazor pages
+|   |-- SudokuGame.razor          # Main game page
+|   `-- SudokuGame.razor.cs       # Game logic code-behind
+|-- Services/                # Business logic and utilities
+|   |-- IGamePersistenceService.cs           # Persistence interface
+|   |-- LocalStorageGamePersistenceService.cs # Local storage implementation
+|   |-- GameStatePersistenceService.cs       # Game state management
+|   |-- GameScoringService.cs                # Scoring calculations
+|   |-- GameTimingService.cs                 # Timer functionality
+|   |-- GameAnimationService.cs              # Animation utilities
+|   `-- CellStylingService.cs                # Dynamic styling
+|-- Models/                  # Data models
+|   `-- GameState.cs              # Game state and statistics models
+|-- Core Game Logic/         # Sudoku engine
+|   |-- SudokuBoard.cs            # Main board logic
+|   `-- SudokuSolver.cs           # Puzzle generation and solving
+|-- wwwroot/                 # Static web assets
+|   |-- index.html               # Main HTML page
+|   |-- manifest.webmanifest     # PWA manifest
+|   |-- service-worker.js        # Service worker for offline support
+|   |-- tailwind.css            # Compiled Tailwind styles
+|   `-- css/app.css             # Custom styles
+`-- Shared/                  # Shared components
+    `-- GameErrorBoundary.razor   # Error handling
 ```
+````````
 
 ## Core Components
 
