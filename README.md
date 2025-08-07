@@ -2,9 +2,9 @@
 
 A modern, responsive Sudoku game built with Blazor WebAssembly, featuring offline capabilities and progressive web app (PWA) functionality.
 
-?? **Play now at: [sudokuwasm.duckdns.org](https://sudokuwasm.duckdns.org)**
+**Play now at: [sudokuwasm.duckdns.org](https://sudokuwasm.duckdns.org)**
 
-## ?? Features
+## Features
 
 - **Cross-Platform**: Runs on any device with a web browser
 - **Offline Support**: Play without an internet connection thanks to service worker caching
@@ -18,7 +18,7 @@ A modern, responsive Sudoku game built with Blazor WebAssembly, featuring offlin
 - **Undo/Redo**: Make mistakes? No problem!
 - **Beautiful UI**: Modern design with Tailwind CSS and smooth animations
 
-## ??? Architecture
+## Architecture
 
 This project follows a clean, component-based architecture utilizing modern web technologies:
 
@@ -75,7 +75,7 @@ SudokuWASM/
     ??? GameErrorBoundary.razor   # Error handling
 ```
 
-## ?? Core Components
+## Core Components
 
 ### Game Engine
 - **SudokuBoard**: Core game logic, puzzle validation, and state management
@@ -93,7 +93,7 @@ SudokuWASM/
 - **Timing**: Precise game timing with pause/resume functionality
 - **Animation**: Smooth transitions and visual feedback
 
-## ?? Getting Started
+## Getting Started
 
 ### Prerequisites
 - [.NET 9.0 SDK](https://dotnet.microsoft.com/download/dotnet/9.0)
@@ -133,7 +133,7 @@ dotnet publish -c Release
 
 The published files will be in `bin/Release/net9.0/publish/wwwroot/`
 
-## ?? Game Features
+## Game Features
 
 ### Difficulty Levels
 - **Easy**: 40+ clues, forgiving scoring
@@ -153,7 +153,7 @@ The published files will be in `bin/Release/net9.0/publish/wwwroot/`
 - Perfect games (no hints or mistakes)
 - Historical performance data
 
-## ?? Progressive Web App
+## Progressive Web App
 
 This Sudoku game is a full PWA with:
 - **Offline Play**: Complete functionality without internet connection
@@ -161,7 +161,7 @@ This Sudoku game is a full PWA with:
 - **Background Updates**: Automatic updates when connection is restored
 - **Responsive Design**: Native-like experience across all devices
 
-## ?? State Management
+## State Management
 
 The game features comprehensive state management:
 - **Auto-Save**: Game state is automatically saved after each move
@@ -169,14 +169,14 @@ The game features comprehensive state management:
 - **Statistics Persistence**: Long-term tracking of your Sudoku journey
 - **Cross-Session**: State persists across browser sessions
 
-## ?? Design Philosophy
+## Design Philosophy
 
 - **Mobile-First**: Designed primarily for touch interfaces
 - **Accessibility**: Keyboard navigation and screen reader support
 - **Performance**: Optimized for smooth 60fps animations
 - **User Experience**: Intuitive interface with helpful visual feedback
 
-## ?? Contributing
+## Contributing
 
 Contributions are welcome! This project demonstrates modern Blazor WebAssembly development practices including:
 - Component-based architecture
@@ -185,10 +185,10 @@ Contributions are welcome! This project demonstrates modern Blazor WebAssembly d
 - Progressive Web App implementation
 - Responsive design patterns
 
-## ?? License
+## License
 
 This project is open source and available under the [MIT License](LICENSE).
 
 ---
 
-*Built with ?? using Blazor WebAssembly and .NET 9*
+*Built with love using Blazor WebAssembly and .NET 9*
