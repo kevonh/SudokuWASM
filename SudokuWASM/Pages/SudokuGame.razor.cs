@@ -112,12 +112,9 @@ public partial class SudokuGame : IDisposable
         isGameWon = gameState.IsGameWon;
         pencilMode = gameState.PencilMode;
         
-        // Restore pause state - if paused, clear visible content
-        isGamePaused = gameState.IsPaused;
-        if (isGamePaused)
-        {
-            ClearVisibleBoard();
-        }
+        // Restore pause state - always start paused regardless of saved state
+        isGamePaused = true;
+        ClearVisibleBoard();
         
         if (gameState.SelectedRow.HasValue && gameState.SelectedCol.HasValue)
         {
@@ -126,18 +123,17 @@ public partial class SudokuGame : IDisposable
         
         // Initialize timing service and restore time
         gameTimingService = new GameTimingService(OnTimerUpdated);
-        
-        gameTimingService.RestoreWithPauseState(gameState.StartTime, gameState.LastMoveTime, gameState.TotalElapsed, gameState.IsPaused);
-        
-        // Resume timer if game is not finished and not paused
-        if (!isGameOver && !isGameWon && !isGamePaused)
-        {
-            gameTimingService.ResumeTimer();
-        }
+        gameTimingService.RestoreWithPauseState(gameState.StartTime, gameState.LastMoveTime, gameState.TotalElapsed, true); // always paused
+        // Do NOT resume timer here
     }
 
     private void InitializeNewGame()
     {
+        // Always reset to default difficulty if not set
+        if (string.IsNullOrEmpty(selectedDifficulty) || !new[]{"Easy","Medium","Hard","Expert"}.Contains(selectedDifficulty))
+        {
+            selectedDifficulty = "Medium";
+        }
         currentGameId = Guid.NewGuid().ToString();
         board = new Sudoku.SudokuBoard();
         board.GenerateNewPuzzle(GetDifficultyClues(selectedDifficulty)); 
@@ -147,7 +143,7 @@ public partial class SudokuGame : IDisposable
         hintCount = 0;
         isGameOver = false;
         isGameWon = false;
-        isGamePaused = false;
+        isGamePaused = true; // always start paused
         selectedCell = null;
         pencilMode = false;
         message = "New puzzle generated!";
@@ -155,10 +151,11 @@ public partial class SudokuGame : IDisposable
         // Initialize timing service
         gameTimingService?.Dispose();
         gameTimingService = new GameTimingService(OnTimerUpdated);
-        gameTimingService.StartTimer();
+        // Do NOT start timer here
         
         // Save the initial game state
         _ = Task.Run(SaveGameStateAsync);
+        StateHasChanged(); // Ensure UI updates
     }
 
     private void OnTimerUpdated()

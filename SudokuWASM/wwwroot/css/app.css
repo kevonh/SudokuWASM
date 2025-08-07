@@ -3,16 +3,16 @@ html, body {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    /* Prevent full height in PWA mode */
-    height: auto;
-    min-height: 100vh;
+    /* Use dynamic viewport height for PWA/mobile correctness */
+    min-height: 100dvh;
+    height: 100dvh;
     max-height: none;
 }
 
 #app {
-    /* Ensure the app doesn't force full height */
-    height: auto;
-    min-height: 100vh;
+    /* Ensure the app fills the viewport */
+    min-height: 100dvh;
+    height: 100dvh;
 }
 
 *, *::before, *::after {
@@ -22,15 +22,15 @@ html, body {
 /* PWA specific styles */
 @media (display-mode: standalone) {
     body {
-        /* Additional control for PWA standalone mode */
-        height: auto;
-        min-height: 100vh;
+        /* Use dynamic viewport height for standalone/PWA mode */
+        min-height: 100dvh;
+        height: 100dvh;
         overflow-y: auto;
     }
     
     .pwa-container {
-        min-height: auto !important;
-        height: auto !important;
+        min-height: 100dvh !important;
+        height: 100dvh !important;
     }
 }
 
