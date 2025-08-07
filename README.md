@@ -73,7 +73,6 @@ SudokuWASM/
 `-- Shared/                  # Shared components
     `-- GameErrorBoundary.razor   # Error handling
 ```
-````````
 
 ## Core Components
 
