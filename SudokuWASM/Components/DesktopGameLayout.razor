@@ -1,0 +1,94 @@
+@using Sudoku
+
+<!-- Desktop Layout -->
+<div class="hidden md:block w-full">
+    <div class="flex gap-8 items-start justify-center max-w-6xl mx-auto">
+        <!-- Large Grid for Desktop -->
+        <SudokuGrid Board="Board"
+                    IsMobile="false"
+                    IsGamePaused="IsGamePaused"
+                    OnGridClick="OnGridClick"
+                    OnResumeGame="OnResumeGame"
+                    OnCellClick="OnCellClick"
+                    GetCellCSS="GetCellCSS"
+                    GetCellTextCSS="GetCellTextCSS" />
+
+        <!-- Desktop Controls Panel -->
+        <div class="flex-1 max-w-md space-y-4">
+            <!-- Game Status (Desktop) -->
+            <ScoreArea OnTogglePause="OnTogglePause"
+                       Score="Score"
+                       ElapsedTime="@ElapsedTime"
+                       WrongGuessCount="WrongGuessCount"
+                       MaxWrongGuesses="MaxWrongGuesses"
+                       HintCount="HintCount"
+                       IsGamePaused="IsGamePaused"
+                       IsPointsAnimating="IsPointsAnimating"
+                       IsMobile="false" />
+
+            <!-- Desktop Controls -->
+            <div class="bg-white rounded-xl shadow-lg p-4 space-y-4">
+                <!-- Action Buttons (Desktop) -->
+                <GameControls OnUndo="OnUndo"
+                              OnErase="OnErase"
+                              OnTogglePencilMode="OnTogglePencilMode"
+                              OnGiveHint="OnGiveHint"
+                              OnShowStatistics="OnShowStatistics"
+                              IsGameDisabled="@(IsGameOver || IsGameWon || IsGamePaused)"
+                              CanUndo="@(CanUndo && !IsGameOver && !IsGameWon)"
+                              CanErase="@(CanErase && !IsGameOver && !IsGameWon)"
+                              CanGiveHint="@(Board != null && !Board.IsComplete() && !IsGameOver && !IsGameWon && !IsGamePaused)"
+                              IsPencilMode="IsPencilMode"
+                              IsMobile="false"
+                              AdditionalClasses="!shadow-none !bg-transparent !p-0" />
+
+                <!-- Number Pad (Desktop) -->
+                <NumberPad OnNumberClick="OnNumberPadClick"
+                           IsNumberDisabled="IsNumberDisabled"
+                           IsMobile="false"
+                           AdditionalClasses="!shadow-none !bg-transparent !p-0" />
+
+                <!-- Difficulty Selection (Desktop) -->
+                <DifficultySelector OnDifficultyChanged="OnDifficultyChanged"
+                                    OnNewGame="OnNewGame"
+                                    SelectedDifficulty="SelectedDifficulty"
+                                    IsMobile="false"
+                                    AdditionalClasses="!shadow-none !bg-transparent !p-0" />
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public SudokuBoard? Board { get; set; }
+    [Parameter] public bool IsGamePaused { get; set; }
+    [Parameter] public bool IsGameOver { get; set; }
+    [Parameter] public bool IsGameWon { get; set; }
+    [Parameter] public bool CanUndo { get; set; }
+    [Parameter] public bool CanErase { get; set; }
+    [Parameter] public bool IsPencilMode { get; set; }
+    [Parameter] public bool IsPointsAnimating { get; set; }
+    [Parameter] public int Score { get; set; }
+    [Parameter] public string ElapsedTime { get; set; } = "00:00";
+    [Parameter] public int WrongGuessCount { get; set; }
+    [Parameter] public int MaxWrongGuesses { get; set; }
+    [Parameter] public int HintCount { get; set; }
+    [Parameter] public string SelectedDifficulty { get; set; } = "Medium";
+    
+    [Parameter] public EventCallback OnGridClick { get; set; }
+    [Parameter] public EventCallback OnResumeGame { get; set; }
+    [Parameter] public EventCallback<(int row, int col)> OnCellClick { get; set; }
+    [Parameter] public EventCallback OnUndo { get; set; }
+    [Parameter] public EventCallback OnErase { get; set; }
+    [Parameter] public EventCallback OnTogglePencilMode { get; set; }
+    [Parameter] public EventCallback OnGiveHint { get; set; }
+    [Parameter] public EventCallback OnShowStatistics { get; set; }
+    [Parameter] public EventCallback<int> OnNumberPadClick { get; set; }
+    [Parameter] public EventCallback OnTogglePause { get; set; }
+    [Parameter] public EventCallback<string> OnDifficultyChanged { get; set; }
+    [Parameter] public EventCallback OnNewGame { get; set; }
+    
+    [Parameter] public Func<int, int, string> GetCellCSS { get; set; } = default!;
+    [Parameter] public Func<int, int, string> GetCellTextCSS { get; set; } = default!;
+    [Parameter] public Func<int, bool> IsNumberDisabled { get; set; } = default!;
+}

@@ -125,10 +125,7 @@ public partial class SudokuGame : IDisposable
         }
         
         // Initialize timing service and restore time
-        gameTimingService = new GameTimingService(() => {
-            elapsedTime = gameTimingService?.ElapsedTime ?? "00:00";
-            InvokeAsync(StateHasChanged);
-        });
+        gameTimingService = new GameTimingService(OnTimerUpdated);
         
         gameTimingService.RestoreWithPauseState(gameState.StartTime, gameState.LastMoveTime, gameState.TotalElapsed, gameState.IsPaused);
         
@@ -157,14 +154,20 @@ public partial class SudokuGame : IDisposable
         
         // Initialize timing service
         gameTimingService?.Dispose();
-        gameTimingService = new GameTimingService(() => {
-            elapsedTime = gameTimingService?.ElapsedTime ?? "00:00";
-            InvokeAsync(StateHasChanged);
-        });
+        gameTimingService = new GameTimingService(OnTimerUpdated);
         gameTimingService.StartTimer();
         
         // Save the initial game state
         _ = Task.Run(SaveGameStateAsync);
+    }
+
+    private void OnTimerUpdated()
+    {
+        if (gameTimingService != null)
+        {
+            elapsedTime = gameTimingService.ElapsedTime;
+            InvokeAsync(StateHasChanged);
+        }
     }
 
     private void TogglePause()
@@ -295,6 +298,12 @@ public partial class SudokuGame : IDisposable
         selectedCell = (row, col);
         _ = Task.Run(SaveGameStateAsync);
         StateHasChanged();
+    }
+
+    // Helper method to handle tuple parameter for OnCellClick
+    private void OnCellClickTuple((int row, int col) cellCoordinates)
+    {
+        OnCellClick(cellCoordinates.row, cellCoordinates.col);
     }
 
     private void OnNumberClick(int number)

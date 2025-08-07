@@ -1,0 +1,19 @@
+@using Sudoku
+
+<!-- Pause Overlay -->
+@if (IsGamePaused)
+{
+    <div class="absolute inset-0 bg-white bg-opacity-80 backdrop-blur-sm rounded-lg @(IsMobile ? "" : "rounded-xl") flex items-center justify-center cursor-pointer z-10" @onclick="OnResumeClick">
+        <div class="text-center">
+            <div class="@(IsMobile ? "text-[10rem]" : "text-[25rem]") leading-none text-blue-600 hover:text-blue-700 transition-colors duration-200 drop-shadow-2xl animate-pulse">
+                <i class="bi bi-play-circle-fill"></i>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsGamePaused { get; set; }
+    [Parameter] public bool IsMobile { get; set; }
+    [Parameter] public EventCallback OnResumeClick { get; set; }
+}

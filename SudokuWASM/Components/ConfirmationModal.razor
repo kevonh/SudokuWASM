@@ -1,0 +1,33 @@
+<!-- Confirmation Modal -->
+@if (IsVisible)
+{
+    <div class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-[60] p-4">
+        <div class="bg-white rounded-xl p-6 w-full max-w-sm text-center">
+            <div class="text-4xl mb-4 text-red-500">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+            </div>
+            <h3 class="text-xl font-bold text-gray-800 mb-2">@Title</h3>
+            <p class="text-gray-600 mb-6">@Message</p>
+            <div class="flex gap-3 justify-center">
+                <button class="bg-gray-300 hover:bg-gray-400 text-gray-700 font-medium py-2 px-4 rounded-lg transition-colors duration-200"
+                        @onclick="OnCancel">
+                    @CancelText
+                </button>
+                <button class="bg-red-500 hover:bg-red-600 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200"
+                        @onclick="OnConfirm">
+                    @ConfirmText
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsVisible { get; set; }
+    [Parameter] public string Title { get; set; } = "Confirm Action";
+    [Parameter] public string Message { get; set; } = "Are you sure you want to proceed?";
+    [Parameter] public string CancelText { get; set; } = "Cancel";
+    [Parameter] public string ConfirmText { get; set; } = "Confirm";
+    [Parameter] public EventCallback OnCancel { get; set; }
+    [Parameter] public EventCallback OnConfirm { get; set; }
+}
