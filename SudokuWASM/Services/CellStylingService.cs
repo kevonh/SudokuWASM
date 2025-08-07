@@ -10,12 +10,14 @@ public class CellStylingService
     private readonly SudokuBoard? board;
     private readonly bool[,] wrongCells;
     private readonly (int row, int col)? selectedCell;
+    private readonly bool isMobile;
 
-    public CellStylingService(SudokuBoard? board, bool[,] wrongCells, (int row, int col)? selectedCell)
+    public CellStylingService(SudokuBoard? board, bool[,] wrongCells, (int row, int col)? selectedCell, bool isMobile = false)
     {
         this.board = board;
         this.wrongCells = wrongCells;
         this.selectedCell = selectedCell;
+        this.isMobile = isMobile;
     }
 
     public string GetCellCSS(int row, int col)
@@ -34,13 +36,16 @@ public class CellStylingService
     {
         if (board == null) return "";
         
-        // Check if this cell has a wrong value
-        if (wrongCells[row, col])
-        {
-            return "text-red-600 font-bold";
-        }
+        var textSizeClasses = GetTextSizeClasses(row, col);
+        var textColorClasses = GetTextColorClasses(row, col);
         
-        return "";
+        return string.Join(" ", textSizeClasses.Concat(textColorClasses));
+    }
+
+    public string GetNotesTextCSS()
+    {
+        // Centralized notes text sizing - increased for better visibility
+        return isMobile ? "text-[10px] sm:text-xs" : "text-sm";
     }
 
     private bool IsSelectedCell(int row, int col)
@@ -50,69 +55,71 @@ public class CellStylingService
 
     private string[] GetBaseCellClasses()
     {
+        // Removed text sizing from base classes - handle separately for better control
         return ["w-10", "h-10", "sm:w-12", "sm:h-12", "md:w-16", "md:h-16", "lg:w-20", "lg:h-20", 
-                "flex", "items-center", "justify-center", "cursor-pointer", "text-base", "sm:text-lg", 
+                "flex", "items-center", "justify-center", "cursor-pointer",
                 "font-medium", "transition-all", "duration-200", "touch-manipulation", "select-none"];
+    }
+
+    private string[] GetTextSizeClasses(int row, int col)
+    {
+        // Centralized text sizing logic with larger sizes to better fill the cell areas
+        // Mobile: w-10/h-10 (40px) -> sm:w-12/h-12 (48px) -> md:w-16/h-16 (64px)
+        // Desktop: w-10/h-10 (40px) -> sm:w-12/h-12 (48px) -> md:w-16/h-16 (64px) -> lg:w-20/h-20 (80px)
+        
+        if (isMobile)
+        {
+            // Mobile sizes: increased from text-sm/base/lg to text-lg/xl/2xl for better fill
+            return ["text-2xl", "sm:text-3xl", "md:text-4xl"];
+        }
+        else
+        {
+            // Desktop sizes: increased from text-base/lg to text-xl/2xl/3xl for better fill
+            return ["text-3xl", "sm:text-4xl", "md:text-5xl", "lg:text-6xl"];
+        }
+    }
+
+    private string[] GetTextColorClasses(int row, int col)
+    {
+        // Check if this cell has a wrong value
+        if (wrongCells[row, col] && board!.Grid[row, col] != 0)
+        {
+            return ["text-red-600", "font-bold"];
+        }
+        
+        if (board!.HintCells[row, col])
+            return ["text-green-800", "font-bold"];
+        
+        if (board.FixedCells[row, col])
+            return ["text-gray-800", "font-bold"];
+        
+        if (board.CorrectlySolvedCells[row, col])
+            return ["text-blue-900", "font-bold"];
+        
+        return ["text-blue-600"];
     }
 
     private string[] GetCellTypeClasses(int row, int col, bool isSelected)
     {
-        // If the cell is wrong, override the normal text color classes
-        if (wrongCells[row, col] && board!.Grid[row, col] != 0)
+        // Background colors only - text colors handled in GetTextColorClasses
+        if (wrongCells[row, col] && board!.Grid[row, col] != 0 && !isSelected)
         {
-            return GetWrongCellClasses(isSelected);
+            return ["bg-red-50"];
         }
         
-        if (board!.HintCells[row, col])
-            return GetHintCellClasses(isSelected);
+        if (board!.HintCells[row, col] && !isSelected)
+            return ["bg-white"];
         
-        if (board.FixedCells[row, col])
-            return GetFixedCellClasses(isSelected);
+        if (board.FixedCells[row, col] && !isSelected)
+            return ["bg-gray-100"];
         
-        if (board.CorrectlySolvedCells[row, col])
-            return GetCorrectSolvedCellClasses(isSelected);
+        if (board.CorrectlySolvedCells[row, col] && !isSelected)
+            return ["bg-white"];
         
-        return GetDefaultCellClasses(isSelected);
-    }
-
-    private string[] GetWrongCellClasses(bool isSelected)
-    {
-        var classes = new List<string> { "text-red-600", "font-bold" };
-        if (!isSelected)
-            classes.Add("bg-red-50");
-        return classes.ToArray();
-    }
-
-    private string[] GetHintCellClasses(bool isSelected)
-    {
-        var classes = new List<string> { "text-green-800", "font-bold" };
-        if (!isSelected)
-            classes.Add("bg-white");
-        return classes.ToArray();
-    }
-
-    private string[] GetFixedCellClasses(bool isSelected)
-    {
-        var classes = new List<string> { "text-gray-800", "font-bold" };
-        if (!isSelected)
-            classes.Add("bg-gray-100");
-        return classes.ToArray();
-    }
-
-    private string[] GetCorrectSolvedCellClasses(bool isSelected)
-    {
-        var classes = new List<string> { "text-blue-900", "font-bold" };
-        if (!isSelected)
-            classes.Add("bg-white");
-        return classes.ToArray();
-    }
-
-    private string[] GetDefaultCellClasses(bool isSelected)
-    {
         if (isSelected)
-            return ["text-blue-600"];
+            return [];
         
-        return ["bg-white", "text-blue-600", "hover:bg-blue-50"];
+        return ["bg-white", "hover:bg-blue-50"];
     }
 
     private string[] GetHighlightClasses(int row, int col, bool isSelected)
@@ -120,7 +127,7 @@ public class CellStylingService
         return (isSelected, wrongCells[row, col], IsNumberHighlighted(row, col), IsMasterHighlighted(row, col)) switch
         {
             (true, _, _, _)            => ["bg-blue-200", "z-10"],
-            (false, true, _, _)        => ["bg-red-100"], // Remove text color here since it's handled in GetCellTypeClasses
+            (false, true, _, _)        => ["bg-red-100"],
             (false, false, true, _)    => ["!bg-blue-400"],
             (false, false, false, true) => ["!bg-blue-300"],
             _                          => []

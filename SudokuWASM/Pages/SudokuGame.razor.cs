@@ -602,14 +602,32 @@ public partial class SudokuGame : IDisposable
 
     private string GetCellCSS(int row, int col)
     {
-        var stylingService = new Sudoku.Services.CellStylingService(board, wrongCells, selectedCell);
+        var stylingService = new Sudoku.Services.CellStylingService(board, wrongCells, selectedCell, false);
         return stylingService.GetCellCSS(row, col);
     }
 
     private string GetCellTextCSS(int row, int col)
     {
-        var stylingService = new Sudoku.Services.CellStylingService(board, wrongCells, selectedCell);
+        var stylingService = new Sudoku.Services.CellStylingService(board, wrongCells, selectedCell, false);
         return stylingService.GetCellTextCSS(row, col);
+    }
+
+    private string GetMobileCellCSS(int row, int col)
+    {
+        var stylingService = new Sudoku.Services.CellStylingService(board, wrongCells, selectedCell, true);
+        return stylingService.GetCellCSS(row, col);
+    }
+
+    private string GetMobileCellTextCSS(int row, int col)
+    {
+        var stylingService = new Sudoku.Services.CellStylingService(board, wrongCells, selectedCell, true);
+        return stylingService.GetCellTextCSS(row, col);
+    }
+
+    private string GetNotesTextCSS(bool isMobile)
+    {
+        var stylingService = new Sudoku.Services.CellStylingService(board, wrongCells, selectedCell, isMobile);
+        return stylingService.GetNotesTextCSS();
     }
 
     public void Dispose()

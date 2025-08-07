@@ -17,56 +17,24 @@
                                 var col = blockCol * 3 + cellCol;
                                 var cellClass = GetCellCSS(row, col);
                                 var textClass = GetCellTextCSS(row, col);
-                                var combinedTextClass = IsMobile ? $"text-sm sm:text-base md:text-lg {textClass}" : textClass;
 
-                                @if (IsMobile)
-                                {
-                                    <div class="@cellClass" @onclick="() => HandleCellClick(row, col)" @ontouchstart="() => HandleCellClick(row, col)">
-                                        @if (Board!.FixedCells[row, col] || Board.HintCells[row, col])
-                                        {
-                                            <span class="text-sm sm:text-base md:text-lg">@(Board.Grid[row, col] == 0 ? "" : Board.Grid[row, col])</span>
-                                        }
-                                        else if (Board.Grid[row, col] != 0)
-                                        {
-                                            <span class="@combinedTextClass">@Board.Grid[row, col]</span>
-                                        }
-                                        else
-                                        {
-                                            <div class="grid grid-cols-3 gap-0 text-[8px] sm:text-xs text-gray-400 w-full h-full">
-                                                @for (int n = 1; n <= 9; n++)
-                                                {
-                                                    <div class="flex items-center justify-center">
-                                                        <span class="@(Board.Notes[row, col].Contains(n) ? "text-gray-600" : "opacity-0")">@n</span>
-                                                    </div>
-                                                }
-                                            </div>
-                                        }
-                                    </div>
-                                }
-                                else
-                                {
-                                    <div class="@cellClass" @onclick="() => HandleCellClick(row, col)">
-                                        @if (Board!.FixedCells[row, col] || Board.HintCells[row, col])
-                                        {
-                                            <span>@(Board.Grid[row, col] == 0 ? "" : Board.Grid[row, col])</span>
-                                        }
-                                        else if (Board.Grid[row, col] != 0)
-                                        {
-                                            <span class="@textClass">@Board.Grid[row, col]</span>
-                                        }
-                                        else
-                                        {
-                                            <div class="grid grid-cols-3 gap-0 text-xs text-gray-400 w-full h-full">
-                                                @for (int n = 1; n <= 9; n++)
-                                                {
-                                                    <div class="flex items-center justify-center text-xs">
-                                                        <span class="@(Board.Notes[row, col].Contains(n) ? "text-gray-600" : "opacity-0")">@n</span>
-                                                    </div>
-                                                }
-                                            </div>
-                                        }
-                                    </div>
-                                }
+                                <div class="@cellClass" @onclick="() => HandleCellClick(row, col)" @ontouchstart="() => HandleCellClick(row, col)">
+                                    @if (Board!.Grid[row, col] != 0)
+                                    {
+                                        <span class="@textClass">@Board.Grid[row, col]</span>
+                                    }
+                                    else
+                                    {
+                                        <div class="grid grid-cols-3 gap-0 @NotesTextClass text-gray-400 w-full h-full">
+                                            @for (int n = 1; n <= 9; n++)
+                                            {
+                                                <div class="flex items-center justify-center">
+                                                    <span class="@(Board.Notes[row, col].Contains(n) ? "text-gray-600" : "opacity-0")">@n</span>
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+                                </div>
                             }
                         }
                     </div>
@@ -90,6 +58,7 @@
     [Parameter] public EventCallback<(int row, int col)> OnCellClick { get; set; }
     [Parameter] public Func<int, int, string> GetCellCSS { get; set; } = default!;
     [Parameter] public Func<int, int, string> GetCellTextCSS { get; set; } = default!;
+    [Parameter] public string NotesTextClass { get; set; } = default!;
 
     private async Task HandleCellClick(int row, int col)
     {

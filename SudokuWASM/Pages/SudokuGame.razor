@@ -40,8 +40,9 @@
                               OnTogglePause="TogglePause"
                               OnDifficultyChanged="SetDifficulty"
                               OnNewGame="GenerateNewGame"
-                              GetCellCSS="GetCellCSS"
-                              GetCellTextCSS="GetCellTextCSS"
+                              GetCellCSS="GetMobileCellCSS"
+                              GetCellTextCSS="GetMobileCellTextCSS"
+                              NotesTextClass="@GetNotesTextCSS(true)"
                               IsNumberDisabled="IsNumberPadButtonDisabled" />
 
             <!-- Desktop Layout -->
@@ -73,6 +74,7 @@
                                OnNewGame="GenerateNewGame"
                                GetCellCSS="GetCellCSS"
                                GetCellTextCSS="GetCellTextCSS"
+                               NotesTextClass="@GetNotesTextCSS(false)"
                                IsNumberDisabled="IsNumberPadButtonDisabled" />
         }
     </div>

@@ -11,7 +11,8 @@
                     OnResumeGame="OnResumeGame"
                     OnCellClick="OnCellClick"
                     GetCellCSS="GetCellCSS"
-                    GetCellTextCSS="GetCellTextCSS" />
+                    GetCellTextCSS="GetCellTextCSS"
+                    NotesTextClass="@NotesTextClass" />
 
         <!-- Desktop Controls Panel -->
         <div class="flex-1 max-w-md space-y-4">
@@ -90,5 +91,6 @@
     
     [Parameter] public Func<int, int, string> GetCellCSS { get; set; } = default!;
     [Parameter] public Func<int, int, string> GetCellTextCSS { get; set; } = default!;
+    [Parameter] public string NotesTextClass { get; set; } = default!;
     [Parameter] public Func<int, bool> IsNumberDisabled { get; set; } = default!;
 }
