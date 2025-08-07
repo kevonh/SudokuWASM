@@ -1,0 +1,135 @@
+@* 
+   ScoreArea Component - Displays game statistics (Score, Time, Wrong guesses, Hints)
+   Supports both mobile and desktop layouts with pause functionality
+*@
+
+<div class="@ContainerClasses">
+    <div class="flex justify-between items-center text-sm">
+        <!-- Score -->
+        <div class="text-center">
+            <div class="@ScoreClasses">@DisplayScore</div>
+            <div class="@LabelClasses">SCORE</div>
+        </div>
+        
+        <!-- Time with Pause Button -->
+        <div class="text-center cursor-pointer" @onclick="@(() => OnTogglePause.InvokeAsync())" title="@PauseButtonTitle">
+            <div class="flex items-center @TimeGapClasses">
+                <div class="@TimeClasses">@ElapsedTime</div>
+                <i class="bi @PauseIconClasses @PauseIconSize"></i>
+            </div>
+            <div class="@LabelClasses">TIME</div>
+        </div>
+        
+        <!-- Wrong Guesses -->
+        <div class="text-center">
+            <div class="@WrongGuessClasses">@WrongGuessCount/@MaxWrongGuesses</div>
+            <div class="@LabelClasses">WRONG</div>
+        </div>
+        
+        <!-- Hints Used -->
+        <div class="text-center">
+            <div class="@HintClasses">@HintCount</div>
+            <div class="@LabelClasses">HINTS</div>
+        </div>
+    </div>
+</div>
+
+@code {
+    /// <summary>
+    /// Callback for toggling pause state
+    /// </summary>
+    [Parameter] public EventCallback OnTogglePause { get; set; }
+    
+    /// <summary>
+    /// Current game score
+    /// </summary>
+    [Parameter] public int Score { get; set; }
+    
+    /// <summary>
+    /// Formatted elapsed time string
+    /// </summary>
+    [Parameter] public string ElapsedTime { get; set; } = "00:00";
+    
+    /// <summary>
+    /// Current number of wrong guesses
+    /// </summary>
+    [Parameter] public int WrongGuessCount { get; set; }
+    
+    /// <summary>
+    /// Maximum allowed wrong guesses
+    /// </summary>
+    [Parameter] public int MaxWrongGuesses { get; set; } = 4;
+    
+    /// <summary>
+    /// Number of hints used
+    /// </summary>
+    [Parameter] public int HintCount { get; set; }
+    
+    /// <summary>
+    /// Whether the game is currently paused
+    /// </summary>
+    [Parameter] public bool IsGamePaused { get; set; }
+    
+    /// <summary>
+    /// Whether score animation should be shown
+    /// </summary>
+    [Parameter] public bool IsPointsAnimating { get; set; }
+    
+    /// <summary>
+    /// Determines if this is a mobile layout
+    /// </summary>
+    [Parameter] public bool IsMobile { get; set; } = false;
+    
+    /// <summary>
+    /// Additional CSS classes to apply to the container
+    /// </summary>
+    [Parameter] public string? AdditionalClasses { get; set; }
+
+    private string ContainerClasses => 
+        $"bg-white rounded-lg shadow-lg p-{(IsMobile ? "2" : "4")} {AdditionalClasses}".Trim();
+
+    private string DisplayScore => Score.ToString("N0");
+
+    private string ScoreClasses
+    {
+        get
+        {
+            var baseClasses = IsMobile ? "text-lg font-bold text-purple-600" : "text-xl font-bold text-purple-600";
+            var animationClasses = IsPointsAnimating 
+                ? "animate-pulse scale-110 transition-transform duration-500" 
+                : "transition-transform duration-200";
+            return $"{baseClasses} {animationClasses}";
+        }
+    }
+
+    private string TimeClasses => IsMobile ? "text-lg font-bold text-gray-800" : "text-xl font-bold text-gray-800";
+    
+    private string WrongGuessClasses
+    {
+        get
+        {
+            var baseClasses = IsMobile ? "text-lg font-bold" : "font-bold";
+            // Show red color if there are any wrong guesses, and darker red if at max
+            var colorClasses = WrongGuessCount >= MaxWrongGuesses 
+                ? "text-red-700" // Darker red when at maximum (game over)
+                : WrongGuessCount > 0 
+                    ? "text-red-600" // Regular red when there are wrong guesses
+                    : "text-gray-800"; // Gray when no wrong guesses
+            return $"{baseClasses} {colorClasses}";
+        }
+    }
+
+    private string HintClasses => IsMobile ? "text-lg font-bold text-blue-600" : "font-bold text-blue-600";
+    
+    private string LabelClasses => "text-xs text-gray-500";
+    
+    private string TimeGapClasses => IsMobile ? "gap-1" : "gap-2";
+    
+    private string PauseIconClasses => IsGamePaused 
+        ? "bi-play-circle text-green-600" 
+        : "bi-pause-circle text-blue-600";
+    
+    private string PauseIconSize => IsMobile ? "text-sm" : "text-lg";
+    
+    private string PauseButtonTitle => IsGamePaused ? "Resume game" : "Pause game";
+}

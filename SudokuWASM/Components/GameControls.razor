@@ -1,0 +1,164 @@
+@* 
+   GameControls Component - Renders the action buttons (Undo, Erase, Pencil, Hint, Stats)
+   Supports both mobile and desktop layouts
+*@
+
+<div class="@ContainerClasses">
+    <div class="grid grid-cols-5 gap-@(IsMobile ? "1" : "2")">
+        <!-- Undo Button -->
+        <button class="@GetButtonClasses(CanUndo && !IsGameDisabled)" 
+                @onclick="@(() => OnUndo.InvokeAsync())" 
+                disabled="@(IsGameDisabled || !CanUndo)" 
+                title="Undo">
+            <i class="bi bi-arrow-counterclockwise @IconSize"></i>
+        </button>
+        
+        <!-- Erase Button -->
+        <button class="@GetButtonClasses(CanErase && !IsGameDisabled)" 
+                @onclick="@(() => OnErase.InvokeAsync())" 
+                disabled="@(IsGameDisabled || !CanErase)" 
+                title="Erase">
+            <i class="bi bi-eraser @IconSize"></i>
+        </button>
+        
+        <!-- Pencil Mode Button -->
+        <button class="@GetPencilButtonClasses()" 
+                @onclick="@(() => OnTogglePencilMode.InvokeAsync())" 
+                disabled="@IsGameDisabled" 
+                title="@(IsPencilMode ? "Notes mode ON" : "Notes mode OFF")">
+            <i class="bi bi-pencil @IconSize"></i>
+        </button>
+        
+        <!-- Hint Button -->
+        <button class="@GetHintButtonClasses()" 
+                @onclick="@(() => OnGiveHint.InvokeAsync())" 
+                disabled="@(IsGameDisabled || !CanGiveHint)" 
+                title="Hint">
+            <i class="bi bi-lightbulb @IconSize"></i>
+        </button>
+        
+        <!-- Statistics Button -->
+        <button class="@GetButtonClasses(true)" 
+                @onclick="@(() => OnShowStatistics.InvokeAsync())" 
+                title="Statistics">
+            <i class="bi bi-bar-chart @IconSize"></i>
+        </button>
+    </div>
+</div>
+
+@code {
+    /// <summary>
+    /// Callback for undo action
+    /// </summary>
+    [Parameter] public EventCallback OnUndo { get; set; }
+    
+    /// <summary>
+    /// Callback for erase action
+    /// </summary>
+    [Parameter] public EventCallback OnErase { get; set; }
+    
+    /// <summary>
+    /// Callback for toggling pencil mode
+    /// </summary>
+    [Parameter] public EventCallback OnTogglePencilMode { get; set; }
+    
+    /// <summary>
+    /// Callback for giving a hint
+    /// </summary>
+    [Parameter] public EventCallback OnGiveHint { get; set; }
+    
+    /// <summary>
+    /// Callback for showing statistics
+    /// </summary>
+    [Parameter] public EventCallback OnShowStatistics { get; set; }
+    
+    /// <summary>
+    /// Whether the game is in a disabled state (paused, game over, etc.)
+    /// </summary>
+    [Parameter] public bool IsGameDisabled { get; set; }
+    
+    /// <summary>
+    /// Whether undo is currently available
+    /// </summary>
+    [Parameter] public bool CanUndo { get; set; }
+    
+    /// <summary>
+    /// Whether erase is currently available
+    /// </summary>
+    [Parameter] public bool CanErase { get; set; }
+    
+    /// <summary>
+    /// Whether hint is currently available
+    /// </summary>
+    [Parameter] public bool CanGiveHint { get; set; }
+    
+    /// <summary>
+    /// Whether pencil mode is currently active
+    /// </summary>
+    [Parameter] public bool IsPencilMode { get; set; }
+    
+    /// <summary>
+    /// Determines if this is a mobile layout
+    /// </summary>
+    [Parameter] public bool IsMobile { get; set; } = false;
+    
+    /// <summary>
+    /// Additional CSS classes to apply to the container
+    /// </summary>
+    [Parameter] public string? AdditionalClasses { get; set; }
+
+    private string ContainerClasses => 
+        $"bg-white rounded-lg shadow-lg p-2 {AdditionalClasses}".Trim();
+
+    private string IconSize => IsMobile ? "text-sm" : "text-lg";
+
+    private string GetButtonClasses(bool isEnabled)
+    {
+        var baseClasses = IsMobile
+            ? "bg-gray-100 hover:bg-gray-200 active:bg-gray-300 text-gray-700 font-medium py-2 px-1 rounded-lg transition-all duration-200 flex items-center justify-center touch-manipulation"
+            : "bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-3 px-3 rounded-lg transition-all duration-200 flex items-center justify-center";
+
+        return isEnabled 
+            ? baseClasses 
+            : $"{baseClasses} opacity-50 cursor-not-allowed";
+    }
+
+    private string GetPencilButtonClasses()
+    {
+        var baseClasses = IsMobile
+            ? "font-medium py-2 px-1 rounded-lg transition-all duration-200 flex items-center justify-center touch-manipulation"
+            : "bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-3 px-3 rounded-lg transition-all duration-200 flex items-center justify-center";
+
+        if (IsGameDisabled)
+        {
+            return $"{baseClasses} opacity-50 cursor-not-allowed";
+        }
+
+        if (IsPencilMode)
+        {
+            return IsMobile 
+                ? $"bg-blue-500 text-white {baseClasses}"
+                : $"!bg-blue-500 !text-white {baseClasses}";
+        }
+
+        return IsMobile 
+            ? $"bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300 {baseClasses}"
+            : baseClasses;
+    }
+
+    private string GetHintButtonClasses()
+    {
+        var baseClasses = IsMobile
+            ? "font-medium py-2 px-1 rounded-lg transition-all duration-200 flex items-center justify-center touch-manipulation"
+            : "bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-3 px-3 rounded-lg transition-all duration-200 flex items-center justify-center";
+
+        if (IsGameDisabled || !CanGiveHint)
+        {
+            return $"{baseClasses} opacity-50 cursor-not-allowed";
+        }
+
+        return IsMobile 
+            ? $"bg-yellow-100 hover:bg-yellow-200 active:bg-yellow-300 text-yellow-700 {baseClasses}"
+            : baseClasses;
+    }
+}

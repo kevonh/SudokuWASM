@@ -1,5 +1,6 @@
 ﻿@page "/"
 @using System.Timers
+@using SudokuWASM.Components
 @inject IJSRuntime JSRuntime
 @inject ILogger<SudokuGame> Logger
 @implements IDisposable
@@ -78,7 +79,7 @@
                                             var textClass = GetCellTextCSS(row, col);
 
                                             <div class="@cellClass" @onclick="() => OnCellClick(row, col)" @ontouchstart="() => OnCellClick(row, col)">
-                                                @if (board.FixedCells[row, col] || board.HintCells[row, col] || board.CorrectlySolvedCells[row, col])
+                                                @if (board.FixedCells[row, col] || board.HintCells[row, col])
                                                 {
                                                     <span class="text-sm sm:text-base md:text-lg">@(board.Grid[row, col] == 0 ? "" : board.Grid[row, col])</span>
                                                 }
@@ -118,105 +119,47 @@
                     }
                 </div>
 
-                <!-- 2. Toolbar - 5 buttons WITH Stats -->
+                <!-- 2. Game Controls (Mobile) -->
                 <div class="w-full max-w-sm">
-                    <div class="bg-white rounded-lg shadow-lg p-2">
-                        <div class="grid grid-cols-5 gap-1">
-                            <button class="bg-gray-100 hover:bg-gray-200 active:bg-gray-300 text-gray-700 font-medium py-2 px-1 rounded-lg transition-all duration-200 flex items-center justify-center touch-manipulation @(CanEditSelectedCell && !isGameOver && !isGameWon ? "" : "opacity-50")" 
-                                    @onclick="Undo" disabled="@(isGameOver || isGameWon || isGamePaused)" title="Undo">
-                                <i class="bi bi-arrow-counterclockwise text-sm"></i>
-                            </button>
-                            <button class="bg-gray-100 hover:bg-gray-200 active:bg-gray-300 text-gray-700 font-medium py-2 px-1 rounded-lg transition-all duration-200 flex items-center justify-center touch-manipulation @(CanEditSelectedCell && !isGameOver && !isGameWon ? "" : "opacity-50")" 
-                                    @onclick="Erase" disabled="@(!CanEditSelectedCell || isGameOver || isGameWon || isGamePaused)" title="Erase">
-                                <i class="bi bi-eraser text-sm"></i>
-                            </button>
-                            <button class="font-medium py-2 px-1 rounded-lg transition-all duration-200 flex items-center justify-center touch-manipulation @(pencilMode ? "bg-blue-500 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300") @(isGameOver || isGameWon || isGamePaused ? "opacity-50" : "")" 
-                                    @onclick="TogglePencilMode" disabled="@(isGameOver || isGameWon || isGamePaused)" title="Notes">
-                                <i class="bi bi-pencil text-sm"></i>
-                            </button>
-                            <button class="bg-yellow-100 hover:bg-yellow-200 active:bg-yellow-300 text-yellow-700 font-medium py-2 px-1 rounded-lg transition-all duration-200 flex items-center justify-center touch-manipulation @(board == null || board.IsComplete() || isGameOver || isGameWon || isGamePaused ? "opacity-50" : "")" 
-                                    @onclick="GiveHint" disabled="@(board == null || board.IsComplete() || isGameOver || isGameWon || isGamePaused)" title="Hint">
-                                <i class="bi bi-lightbulb text-sm"></i>
-                            </button>
-                            <button class="bg-gray-100 hover:bg-gray-200 active:bg-gray-300 text-gray-700 font-medium py-2 px-1 rounded-lg transition-all duration-200 flex items-center justify-center touch-manipulation" 
-                                    @onclick="ShowStatisticsAsync" title="Stats">
-                                <i class="bi bi-bar-chart text-sm"></i>
-                            </button>
-                        </div>
-                    </div>
+                    <GameControls OnUndo="Undo"
+                                  OnErase="Erase"
+                                  OnTogglePencilMode="TogglePencilMode"
+                                  OnGiveHint="GiveHint"
+                                  OnShowStatistics="ShowStatisticsAsync"
+                                  IsGameDisabled="@(isGameOver || isGameWon || isGamePaused)"
+                                  CanUndo="@(CanEditSelectedCell && !isGameOver && !isGameWon)"
+                                  CanErase="@(CanEditSelectedCell && !isGameOver && !isGameWon)"
+                                  CanGiveHint="@(board != null && !board.IsComplete() && !isGameOver && !isGameWon && !isGamePaused)"
+                                  IsPencilMode="pencilMode"
+                                  IsMobile="true" />
                 </div>
 
-                <!-- 3. Number Pad -->
+                <!-- 3. Number Pad (Mobile) -->
                 <div class="w-full max-w-sm">
-                    <div class="bg-white rounded-lg shadow-lg p-2">
-                        <div class="grid grid-cols-3 gap-2">
-                            @for (int i = 1; i <= 9; i++)
-                            {
-                                var number = i;
-                                var isDisabled = IsNumberPadButtonDisabled(number);
-                                var buttonClasses = isDisabled 
-                                    ? "bg-gray-200 text-gray-400 font-bold py-2 sm:py-3 px-2 sm:px-3 rounded-lg transition-all duration-200 text-lg sm:text-xl opacity-50 cursor-not-allowed touch-manipulation"
-                                    : "bg-blue-100 hover:bg-blue-200 active:bg-blue-300 text-blue-700 font-bold py-2 sm:py-3 px-2 sm:px-3 rounded-lg transition-all duration-200 text-lg sm:text-xl touch-manipulation";
-                                
-                                <button class="@buttonClasses"
-                                        @onclick="() => OnNumberPadClick(number)"
-                                        disabled="@isDisabled"
-                                        title="@(isDisabled ? $"All 9 {number}'s are already placed" : $"Place {number}")">
-                                    @number
-                                </button>
-                            }
-                        </div>
-                    </div>
+                    <NumberPad OnNumberClick="OnNumberPadClick"
+                               IsNumberDisabled="IsNumberPadButtonDisabled"
+                               IsMobile="true" />
                 </div>
 
-                <!-- 4. Header Stats with Pause Button -->
+                <!-- 4. Score Area (Mobile) -->
                 <div class="w-full max-w-sm">
-                    <div class="bg-white rounded-lg shadow-lg p-2">
-                        <div class="flex justify-between items-center text-sm">
-                            <div class="text-center">
-                                <div class="text-lg font-bold text-purple-600 @(isPointsAnimating ? "animate-pulse scale-110 transition-transform duration-500" : "transition-transform duration-200")">@DisplayScore</div>
-                                <div class="text-xs text-gray-500">SCORE</div>
-                            </div>
-                            <div class="text-center cursor-pointer" @onclick="TogglePause" title="@(isGamePaused ? "Resume" : "Pause") game">
-                                <div class="flex items-center gap-1">
-                                    <div class="text-lg font-bold text-gray-800">@elapsedTime</div>
-                                    <i class="bi @(isGamePaused ? "bi-play-circle text-green-600" : "bi-pause-circle text-blue-600") text-sm"></i>
-                                </div>
-                                <div class="text-xs text-gray-500">TIME</div>
-                            </div>
-                            <div class="text-center">
-                                <div class="text-lg font-bold @(wrongGuessCount >= maxWrongGuesses ? "text-red-600" : "text-gray-800")">@wrongGuessCount/@maxWrongGuesses</div>
-                                <div class="text-xs text-gray-500">WRONG</div>
-                            </div>
-                            <div class="text-center">
-                                <div class="text-lg font-bold text-blue-600">@hintCount</div>
-                                <div class="text-xs text-gray-500">HINTS</div>
-                            </div>
-                        </div>
-                    </div>
+                    <ScoreArea OnTogglePause="TogglePause"
+                               Score="currentScore"
+                               ElapsedTime="@elapsedTime"
+                               WrongGuessCount="wrongGuessCount"
+                               MaxWrongGuesses="maxWrongGuesses"
+                               HintCount="hintCount"
+                               IsGamePaused="isGamePaused"
+                               IsPointsAnimating="isPointsAnimating"
+                               IsMobile="true" />
                 </div>
 
-                <!-- 5. Difficulty + New Game - NO STATS -->
+                <!-- 5. Difficulty + New Game (Mobile) -->
                 <div class="w-full max-w-sm">
-                    <div class="bg-white rounded-lg shadow-lg p-2 space-y-2">
-                        <!-- Difficulty Selection -->
-                        <div class="grid grid-cols-4 gap-1">
-                            @foreach (var diff in new[] { "Easy", "Medium", "Hard", "Expert" })
-                            {
-                                <button class="font-medium py-2 px-1 rounded-lg transition-all duration-200 text-xs touch-manipulation @(selectedDifficulty == diff ? "bg-indigo-500 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300")"
-                                        @onclick="() => SetDifficulty(diff)">
-                                    @diff
-                                </button>
-                            }
-                        </div>
-
-                        <!-- New Game Button -->
-                        <button class="w-full bg-green-500 hover:bg-green-600 active:bg-green-700 text-white font-bold py-2 px-3 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2 touch-manipulation"
-                                @onclick="GenerateNewGame">
-                            <i class="bi bi-plus-circle"></i>
-                            New Game
-                        </button>
-                    </div>
+                    <DifficultySelector OnDifficultyChanged="SetDifficulty"
+                                        OnNewGame="GenerateNewGame"
+                                        SelectedDifficulty="selectedDifficulty"
+                                        IsMobile="true" />
                 </div>
             </div>
 
@@ -242,7 +185,7 @@
                                                     var textClass = GetCellTextCSS(row, col);
 
                                                     <div class="@cellClass" @onclick="() => OnCellClick(row, col)">
-                                                        @if (board!.FixedCells[row, col] || board.HintCells[row, col] || board.CorrectlySolvedCells[row, col])
+                                                        @if (board!.FixedCells[row, col] || board.HintCells[row, col])
                                                         {
                                                             <span>@(board.Grid[row, col] == 0 ? "" : board.Grid[row, col])</span>
                                                         }
@@ -285,101 +228,45 @@
 
                     <!-- Desktop Controls Panel -->
                     <div class="flex-1 max-w-md space-y-4">
-                        <!-- Game Status with Pause Button -->
-                        <div class="bg-white rounded-xl shadow-lg p-4">
-                            <!-- Single line stats - Score, Time, Wrong, Hints -->
-                            <div class="flex justify-between items-center text-sm">
-                                <div class="text-center">
-                                    <div class="text-xl font-bold text-purple-600 @(isPointsAnimating ? "animate-pulse scale-110 transition-transform duration-500" : "transition-transform duration-200")">@DisplayScore</div>
-                                    <div class="text-xs text-gray-500">SCORE</div>
-                                </div>
-                                <div class="text-center cursor-pointer" @onclick="TogglePause" title="@(isGamePaused ? "Resume" : "Pause") game">
-                                    <div class="flex items-center gap-2">
-                                        <div class="font-bold text-gray-800">@elapsedTime</div>
-                                        <i class="bi @(isGamePaused ? "bi-play-circle text-green-600" : "bi-pause-circle text-blue-600") text-lg"></i>
-                                    </div>
-                                    <div class="text-xs text-gray-500">TIME</div>
-                                </div>
-                                <div class="text-center">
-                                    <div class="font-bold @(wrongGuessCount >= maxWrongGuesses ? "text-red-600" : "text-gray-800")">@wrongGuessCount/@maxWrongGuesses</div>
-                                    <div class="text-xs text-gray-500">WRONG</div>
-                                </div>
-                                <div class="text-center">
-                                    <div class="font-bold text-blue-600">@hintCount</div>
-                                    <div class="text-xs text-gray-500">HINTS</div>
-                                </div>
-                            </div>
-                        </div>
+                        <!-- Game Status (Desktop) -->
+                        <ScoreArea OnTogglePause="TogglePause"
+                                   Score="currentScore"
+                                   ElapsedTime="@elapsedTime"
+                                   WrongGuessCount="wrongGuessCount"
+                                   MaxWrongGuesses="maxWrongGuesses"
+                                   HintCount="hintCount"
+                                   IsGamePaused="isGamePaused"
+                                   IsPointsAnimating="isPointsAnimating"
+                                   IsMobile="false" />
 
                         <!-- Desktop Controls -->
                         <div class="bg-white rounded-xl shadow-lg p-4 space-y-4">
-                            <!-- Action Buttons - Now with Stats button (5 buttons) -->
-                            <div class="grid grid-cols-5 gap-2">
-                                <button class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-3 px-3 rounded-lg transition-all duration-200 flex items-center justify-center @(CanEditSelectedCell && !isGameOver && !isGameWon ? "" : "opacity-50 cursor-not-allowed")" 
-                                        @onclick="Undo" title="Undo" disabled="@(isGameOver || isGameWon || isGamePaused)">
-                                    <i class="bi bi-arrow-counterclockwise text-lg"></i>
-                                </button>
-                                <button class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-3 px-3 rounded-lg transition-all duration-200 flex items-center justify-center @(CanEditSelectedCell && !isGameOver && !isGameWon ? "" : "opacity-50 cursor-not-allowed")" 
-                                        @onclick="Erase" title="Erase" disabled="@(!CanEditSelectedCell || isGameOver || isGameWon || isGamePaused)">
-                                    <i class="bi bi-eraser text-lg"></i>
-                                </button>
-                                <button class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-3 px-3 rounded-lg transition-all duration-200 flex items-center justify-center @(pencilMode ? "!bg-blue-500 !text-white" : "") @(isGameOver || isGameWon || isGamePaused ? "opacity-50 cursor-not-allowed" : "")" 
-                                        @onclick="TogglePencilMode" title="Pencil Mode" disabled="@(isGameOver || isGameWon || isGamePaused)">
-                                    <i class="bi bi-pencil text-lg"></i>
-                                </button>
-                                <button class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-3 px-3 rounded-lg transition-all duration-200 flex items-center justify-center @(board == null || board.IsComplete() || isGameOver || isGameWon || isGamePaused ? "opacity-50 cursor-not-allowed" : "")" 
-                                        @onclick="GiveHint" title="Hint" disabled="@(board == null || board.IsComplete() || isGameOver || isGameWon || isGamePaused)">
-                                    <i class="bi bi-lightbulb text-lg"></i>
-                                </button>
-                                <button class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-3 px-3 rounded-lg transition-all duration-200 flex items-center justify-center" 
-                                        @onclick="ShowStatisticsAsync" title="Statistics">
-                                    <i class="bi bi-bar-chart text-lg"></i>
-                                </button>
-                            </div>
+                            <!-- Action Buttons (Desktop) -->
+                            <GameControls OnUndo="Undo"
+                                          OnErase="Erase"
+                                          OnTogglePencilMode="TogglePencilMode"
+                                          OnGiveHint="GiveHint"
+                                          OnShowStatistics="ShowStatisticsAsync"
+                                          IsGameDisabled="@(isGameOver || isGameWon || isGamePaused)"
+                                          CanUndo="@(CanEditSelectedCell && !isGameOver && !isGameWon)"
+                                          CanErase="@(CanEditSelectedCell && !isGameOver && !isGameWon)"
+                                          CanGiveHint="@(board != null && !board.IsComplete() && !isGameOver && !isGameWon && !isGamePaused)"
+                                          IsPencilMode="pencilMode"
+                                          IsMobile="false"
+                                          AdditionalClasses="!shadow-none !bg-transparent !p-0" />
 
-                            <!-- Number Pad -->
-                            <div>
-                                <div class="grid grid-cols-3 gap-2">
-                                    @for (int i = 1; i <= 9; i++)
-                                    {
-                                        var number = i;
-                                        var isDisabled = IsNumberPadButtonDisabled(number);
-                                        var buttonClasses = isDisabled 
-                                            ? "bg-gray-200 text-gray-400 font-bold py-4 px-4 rounded-lg transition-all duration-200 text-xl opacity-50 cursor-not-allowed"
-                                            : "bg-blue-100 hover:bg-blue-200 text-blue-700 font-bold py-4 px-4 rounded-lg transition-all duration-200 text-xl";
-                                        
+                            <!-- Number Pad (Desktop) -->
+                            <NumberPad OnNumberClick="OnNumberPadClick"
+                                       IsNumberDisabled="IsNumberPadButtonDisabled"
+                                       IsMobile="false"
+                                       AdditionalClasses="!shadow-none !bg-transparent !p-0" />
 
-                                        <button class="@buttonClasses"
-                                                @onclick="() => OnNumberPadClick(number)"
-                                                disabled="@isDisabled"
-                                                title="@(isDisabled ? $"All 9 {number}'s are already placed" : $"Place {number}")">
-                                            @number
-                                        </button>
-                                    }
-                                </div>
-                            </div>
-
-                            <!-- Difficulty Selection - 4 across with minimal padding -->
-                            <div>
-                                <div class="grid grid-cols-4 gap-1">
-                                    @foreach (var diff in new[] { "Easy", "Medium", "Hard", "Expert" })
-                                    {
-                                        <button class="font-medium py-2 px-2 rounded-lg transition-all duration-200 text-sm @(selectedDifficulty == diff ? "bg-indigo-500 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200")"
-                                                @onclick="() => SetDifficulty(diff)">
-                                            @diff
-                                        </button>
-                                    }
-                                </div>
-                            </div>
-
-                            <!-- Game Actions - Only New Game button -->
-                            <div>
-                                <button class="w-full bg-green-500 hover:bg-green-600 text-white font-bold p-2 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2"
-                                        @onclick="GenerateNewGame">
-                                    <i class="bi bi-plus-circle"></i>
-                                    New Game
-                                </button>
-                            </div>
+                            <!-- Difficulty Selection (Desktop) -->
+                            <DifficultySelector OnDifficultyChanged="SetDifficulty"
+                                                OnNewGame="GenerateNewGame"
+                                                SelectedDifficulty="selectedDifficulty"
+                                                IsMobile="false"
+                                                AdditionalClasses="!shadow-none !bg-transparent !p-0" />
                         </div>
                     </div>
                 </div>

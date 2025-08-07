@@ -1,0 +1,91 @@
+@* 
+   DifficultySelector Component - Renders difficulty selection buttons and new game button
+*@
+
+<div class="@ContainerClasses">
+    @if (ShowDifficultySelection)
+    {
+        <!-- Difficulty Selection -->
+        <div class="grid grid-cols-4 gap-1 @(ShowNewGameButton ? "mb-2" : "")">
+            @foreach (var difficulty in Difficulties)
+            {
+                <button class="@GetDifficultyButtonClasses(difficulty)"
+                        @onclick="@(() => OnDifficultyChanged.InvokeAsync(difficulty))">
+                    @difficulty
+                </button>
+            }
+        </div>
+    }
+
+    @if (ShowNewGameButton)
+    {
+        <!-- New Game Button -->
+        <button class="@NewGameButtonClasses"
+                @onclick="@(async () => await OnNewGame.InvokeAsync())">
+            <i class="bi bi-plus-circle"></i>
+            New Game
+        </button>
+    }
+</div>
+
+@code {
+    /// <summary>
+    /// Callback when difficulty is changed
+    /// </summary>
+    [Parameter] public EventCallback<string> OnDifficultyChanged { get; set; }
+    
+    /// <summary>
+    /// Callback for starting a new game
+    /// </summary>
+    [Parameter] public EventCallback OnNewGame { get; set; }
+    
+    /// <summary>
+    /// Currently selected difficulty
+    /// </summary>
+    [Parameter] public string SelectedDifficulty { get; set; } = "Medium";
+    
+    /// <summary>
+    /// Available difficulties
+    /// </summary>
+    [Parameter] public string[] Difficulties { get; set; } = ["Easy", "Medium", "Hard", "Expert"];
+    
+    /// <summary>
+    /// Whether to show the difficulty selection buttons
+    /// </summary>
+    [Parameter] public bool ShowDifficultySelection { get; set; } = true;
+    
+    /// <summary>
+    /// Whether to show the new game button
+    /// </summary>
+    [Parameter] public bool ShowNewGameButton { get; set; } = true;
+    
+    /// <summary>
+    /// Determines if this is a mobile layout
+    /// </summary>
+    [Parameter] public bool IsMobile { get; set; } = false;
+    
+    /// <summary>
+    /// Additional CSS classes to apply to the container
+    /// </summary>
+    [Parameter] public string? AdditionalClasses { get; set; }
+
+    private string ContainerClasses => 
+        $"bg-white rounded-lg shadow-lg p-2 {(ShowDifficultySelection && ShowNewGameButton ? "space-y-2" : "")} {AdditionalClasses}".Trim();
+
+    private string GetDifficultyButtonClasses(string difficulty)
+    {
+        var baseClasses = IsMobile
+            ? "font-medium py-2 px-1 rounded-lg transition-all duration-200 text-xs touch-manipulation"
+            : "font-medium py-2 px-2 rounded-lg transition-all duration-200 text-sm";
+
+        var selectedClasses = difficulty == SelectedDifficulty
+            ? "bg-indigo-500 text-white"
+            : "bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300";
+
+        return $"{baseClasses} {selectedClasses}";
+    }
+
+    private string NewGameButtonClasses => IsMobile
+        ? "w-full bg-green-500 hover:bg-green-600 active:bg-green-700 text-white font-bold py-2 px-3 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2 touch-manipulation"
+        : "w-full bg-green-500 hover:bg-green-600 text-white font-bold p-2 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2";
+}

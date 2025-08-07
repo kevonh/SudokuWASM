@@ -362,6 +362,9 @@ public partial class SudokuGame : IDisposable
         }
         else
         {
+            // Place the wrong number so it can be displayed and styled in red
+            board.SetCell(row, col, number);
+            board.ClearNotes(row, col); // Clear notes when placing a number
             wrongGuessCount++;
             wrongCells[row, col] = true;
             currentScore = Math.Max(0, currentScore - 5);
