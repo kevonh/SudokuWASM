@@ -61,8 +61,8 @@
             <!-- Mobile Layout (hidden on md and above) -->
             <div class="md:hidden flex flex-col gap-2 items-center">
                 <!-- 1. Sudoku Grid - FIRST -->
-                <div class="w-full max-w-sm">
-                    <div class="grid grid-cols-3 gap-1 bg-gray-800 p-1 sm:p-2 rounded-lg">
+                <div class="w-full max-w-sm relative">
+                    <div class="grid grid-cols-3 gap-1 bg-gray-800 p-1 sm:p-2 rounded-lg" @onclick="OnGridClick">
                         @for (int blockRow = 0; blockRow < 3; blockRow++)
                         {
                             @for (int blockCol = 0; blockCol < 3; blockCol++)
@@ -75,7 +75,7 @@
                                             var row = blockRow * 3 + cellRow;
                                             var col = blockCol * 3 + cellCol;
                                             var cellClass = GetCellCSS(row, col);
-                                            var isWrong = wrongCells[row, col];
+                                            var textClass = GetCellTextCSS(row, col);
 
                                             <div class="@cellClass" @onclick="() => OnCellClick(row, col)" @ontouchstart="() => OnCellClick(row, col)">
                                                 @if (board.FixedCells[row, col] || board.HintCells[row, col] || board.CorrectlySolvedCells[row, col])
@@ -84,7 +84,7 @@
                                                 }
                                                 else if (board.Grid[row, col] != 0)
                                                 {
-                                                    <span class="text-sm sm:text-base md:text-lg @(isWrong ? "text-red-600 font-bold" : "")">@board.Grid[row, col]</span>
+                                                    <span class="text-sm sm:text-base md:text-lg @textClass">@board.Grid[row, col]</span>
                                                 }
                                                 else
                                                 {
@@ -104,6 +104,18 @@
                             }
                         }
                     </div>
+                    
+                    <!-- Pause Overlay for Mobile -->
+                    @if (isGamePaused)
+                    {
+                        <div class="absolute inset-0 bg-white bg-opacity-80 backdrop-blur-sm rounded-lg flex items-center justify-center cursor-pointer z-10" @onclick="ResumeGame">
+                            <div class="text-center">
+                                <div class="text-[10rem] leading-none text-blue-600 hover:text-blue-700 transition-colors duration-200 drop-shadow-2xl animate-pulse">
+                                    <i class="bi bi-play-circle-fill"></i>
+                                </div>
+                            </div>
+                        </div>
+                    }
                 </div>
 
                 <!-- 2. Toolbar - 5 buttons WITH Stats -->
@@ -111,19 +123,19 @@
                     <div class="bg-white rounded-lg shadow-lg p-2">
                         <div class="grid grid-cols-5 gap-1">
                             <button class="bg-gray-100 hover:bg-gray-200 active:bg-gray-300 text-gray-700 font-medium py-2 px-1 rounded-lg transition-all duration-200 flex items-center justify-center touch-manipulation @(CanEditSelectedCell && !isGameOver && !isGameWon ? "" : "opacity-50")" 
-                                    @onclick="Undo" disabled="@(isGameOver || isGameWon)" title="Undo">
+                                    @onclick="Undo" disabled="@(isGameOver || isGameWon || isGamePaused)" title="Undo">
                                 <i class="bi bi-arrow-counterclockwise text-sm"></i>
                             </button>
                             <button class="bg-gray-100 hover:bg-gray-200 active:bg-gray-300 text-gray-700 font-medium py-2 px-1 rounded-lg transition-all duration-200 flex items-center justify-center touch-manipulation @(CanEditSelectedCell && !isGameOver && !isGameWon ? "" : "opacity-50")" 
-                                    @onclick="Erase" disabled="@(!CanEditSelectedCell || isGameOver || isGameWon)" title="Erase">
+                                    @onclick="Erase" disabled="@(!CanEditSelectedCell || isGameOver || isGameWon || isGamePaused)" title="Erase">
                                 <i class="bi bi-eraser text-sm"></i>
                             </button>
-                            <button class="font-medium py-2 px-1 rounded-lg transition-all duration-200 flex items-center justify-center touch-manipulation @(pencilMode ? "bg-blue-500 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300") @(isGameOver || isGameWon ? "opacity-50" : "")" 
-                                    @onclick="TogglePencilMode" disabled="@(isGameOver || isGameWon)" title="Notes">
+                            <button class="font-medium py-2 px-1 rounded-lg transition-all duration-200 flex items-center justify-center touch-manipulation @(pencilMode ? "bg-blue-500 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300") @(isGameOver || isGameWon || isGamePaused ? "opacity-50" : "")" 
+                                    @onclick="TogglePencilMode" disabled="@(isGameOver || isGameWon || isGamePaused)" title="Notes">
                                 <i class="bi bi-pencil text-sm"></i>
                             </button>
-                            <button class="bg-yellow-100 hover:bg-yellow-200 active:bg-yellow-300 text-yellow-700 font-medium py-2 px-1 rounded-lg transition-all duration-200 flex items-center justify-center touch-manipulation @(board == null || board.IsComplete() || isGameOver || isGameWon ? "opacity-50" : "")" 
-                                    @onclick="GiveHint" disabled="@(board == null || board.IsComplete() || isGameOver || isGameWon)" title="Hint">
+                            <button class="bg-yellow-100 hover:bg-yellow-200 active:bg-yellow-300 text-yellow-700 font-medium py-2 px-1 rounded-lg transition-all duration-200 flex items-center justify-center touch-manipulation @(board == null || board.IsComplete() || isGameOver || isGameWon || isGamePaused ? "opacity-50" : "")" 
+                                    @onclick="GiveHint" disabled="@(board == null || board.IsComplete() || isGameOver || isGameWon || isGamePaused)" title="Hint">
                                 <i class="bi bi-lightbulb text-sm"></i>
                             </button>
                             <button class="bg-gray-100 hover:bg-gray-200 active:bg-gray-300 text-gray-700 font-medium py-2 px-1 rounded-lg transition-all duration-200 flex items-center justify-center touch-manipulation" 
@@ -157,7 +169,7 @@
                     </div>
                 </div>
 
-                <!-- 4. Header Stats - NO Stats button -->
+                <!-- 4. Header Stats with Pause Button -->
                 <div class="w-full max-w-sm">
                     <div class="bg-white rounded-lg shadow-lg p-2">
                         <div class="flex justify-between items-center text-sm">
@@ -165,8 +177,11 @@
                                 <div class="text-lg font-bold text-purple-600 @(isPointsAnimating ? "animate-pulse scale-110 transition-transform duration-500" : "transition-transform duration-200")">@DisplayScore</div>
                                 <div class="text-xs text-gray-500">SCORE</div>
                             </div>
-                            <div class="text-center">
-                                <div class="text-lg font-bold text-gray-800">@elapsedTime</div>
+                            <div class="text-center cursor-pointer" @onclick="TogglePause" title="@(isGamePaused ? "Resume" : "Pause") game">
+                                <div class="flex items-center gap-1">
+                                    <div class="text-lg font-bold text-gray-800">@elapsedTime</div>
+                                    <i class="bi @(isGamePaused ? "bi-play-circle text-green-600" : "bi-pause-circle text-blue-600") text-sm"></i>
+                                </div>
                                 <div class="text-xs text-gray-500">TIME</div>
                             </div>
                             <div class="text-center">
@@ -209,9 +224,9 @@
             <div class="hidden md:block w-full">
                 <div class="flex gap-8 items-start justify-center max-w-6xl mx-auto">
                     <!-- Large Grid for Desktop -->
-                    <div class="flex-shrink-0">
+                    <div class="flex-shrink-0 relative">
                         <div class="bg-white rounded-xl shadow-2xl p-6 border border-gray-200">
-                            <div class="grid grid-cols-3 gap-1 bg-gray-800 p-2 rounded-lg">
+                            <div class="grid grid-cols-3 gap-1 bg-gray-800 p-2 rounded-lg" @onclick="OnGridClick">
                                 @for (int blockRow = 0; blockRow < 3; blockRow++)
                                 {
                                     @for (int blockCol = 0; blockCol < 3; blockCol++)
@@ -224,7 +239,7 @@
                                                     var row = blockRow * 3 + cellRow;
                                                     var col = blockCol * 3 + cellCol;
                                                     var cellClass = GetCellCSS(row, col);
-                                                    var isWrong = wrongCells[row, col];
+                                                    var textClass = GetCellTextCSS(row, col);
 
                                                     <div class="@cellClass" @onclick="() => OnCellClick(row, col)">
                                                         @if (board!.FixedCells[row, col] || board.HintCells[row, col] || board.CorrectlySolvedCells[row, col])
@@ -233,7 +248,7 @@
                                                         }
                                                         else if (board.Grid[row, col] != 0)
                                                         {
-                                                            <span class="@(isWrong ? "text-red-600 font-bold" : "")">@board.Grid[row, col]</span>
+                                                            <span class="@textClass">@board.Grid[row, col]</span>
                                                         }
                                                         else
                                                         {
@@ -254,11 +269,23 @@
                                 }
                             </div>
                         </div>
+                        
+                        <!-- Pause Overlay for Desktop -->
+                        @if (isGamePaused)
+                        {
+                            <div class="absolute inset-0 bg-white bg-opacity-80 backdrop-blur-sm rounded-xl flex items-center justify-center cursor-pointer z-10" @onclick="ResumeGame">
+                                <div class="text-center">
+                                    <div class="text-[25rem] leading-none text-blue-600 hover:text-blue-700 transition-colors duration-200 drop-shadow-2xl animate-pulse">
+                                        <i class="bi bi-play-circle-fill"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        }
                     </div>
 
                     <!-- Desktop Controls Panel -->
                     <div class="flex-1 max-w-md space-y-4">
-                        <!-- Game Status - All on Single Line -->
+                        <!-- Game Status with Pause Button -->
                         <div class="bg-white rounded-xl shadow-lg p-4">
                             <!-- Single line stats - Score, Time, Wrong, Hints -->
                             <div class="flex justify-between items-center text-sm">
@@ -266,8 +293,11 @@
                                     <div class="text-xl font-bold text-purple-600 @(isPointsAnimating ? "animate-pulse scale-110 transition-transform duration-500" : "transition-transform duration-200")">@DisplayScore</div>
                                     <div class="text-xs text-gray-500">SCORE</div>
                                 </div>
-                                <div class="text-center">
-                                    <div class="font-bold text-gray-800">@elapsedTime</div>
+                                <div class="text-center cursor-pointer" @onclick="TogglePause" title="@(isGamePaused ? "Resume" : "Pause") game">
+                                    <div class="flex items-center gap-2">
+                                        <div class="font-bold text-gray-800">@elapsedTime</div>
+                                        <i class="bi @(isGamePaused ? "bi-play-circle text-green-600" : "bi-pause-circle text-blue-600") text-lg"></i>
+                                    </div>
                                     <div class="text-xs text-gray-500">TIME</div>
                                 </div>
                                 <div class="text-center">
@@ -286,19 +316,19 @@
                             <!-- Action Buttons - Now with Stats button (5 buttons) -->
                             <div class="grid grid-cols-5 gap-2">
                                 <button class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-3 px-3 rounded-lg transition-all duration-200 flex items-center justify-center @(CanEditSelectedCell && !isGameOver && !isGameWon ? "" : "opacity-50 cursor-not-allowed")" 
-                                        @onclick="Undo" title="Undo" disabled="@(isGameOver || isGameWon)">
+                                        @onclick="Undo" title="Undo" disabled="@(isGameOver || isGameWon || isGamePaused)">
                                     <i class="bi bi-arrow-counterclockwise text-lg"></i>
                                 </button>
                                 <button class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-3 px-3 rounded-lg transition-all duration-200 flex items-center justify-center @(CanEditSelectedCell && !isGameOver && !isGameWon ? "" : "opacity-50 cursor-not-allowed")" 
-                                        @onclick="Erase" title="Erase" disabled="@(!CanEditSelectedCell || isGameOver || isGameWon)">
+                                        @onclick="Erase" title="Erase" disabled="@(!CanEditSelectedCell || isGameOver || isGameWon || isGamePaused)">
                                     <i class="bi bi-eraser text-lg"></i>
                                 </button>
-                                <button class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-3 px-3 rounded-lg transition-all duration-200 flex items-center justify-center @(pencilMode ? "!bg-blue-500 !text-white" : "") @(isGameOver || isGameWon ? "opacity-50 cursor-not-allowed" : "")" 
-                                        @onclick="TogglePencilMode" title="Pencil Mode" disabled="@(isGameOver || isGameWon)">
+                                <button class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-3 px-3 rounded-lg transition-all duration-200 flex items-center justify-center @(pencilMode ? "!bg-blue-500 !text-white" : "") @(isGameOver || isGameWon || isGamePaused ? "opacity-50 cursor-not-allowed" : "")" 
+                                        @onclick="TogglePencilMode" title="Pencil Mode" disabled="@(isGameOver || isGameWon || isGamePaused)">
                                     <i class="bi bi-pencil text-lg"></i>
                                 </button>
-                                <button class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-3 px-3 rounded-lg transition-all duration-200 flex items-center justify-center @(board == null || board.IsComplete() || isGameOver || isGameWon ? "opacity-50 cursor-not-allowed" : "")" 
-                                        @onclick="GiveHint" title="Hint" disabled="@(board == null || board.IsComplete() || isGameOver || isGameWon)">
+                                <button class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-3 px-3 rounded-lg transition-all duration-200 flex items-center justify-center @(board == null || board.IsComplete() || isGameOver || isGameWon || isGamePaused ? "opacity-50 cursor-not-allowed" : "")" 
+                                        @onclick="GiveHint" title="Hint" disabled="@(board == null || board.IsComplete() || isGameOver || isGameWon || isGamePaused)">
                                     <i class="bi bi-lightbulb text-lg"></i>
                                 </button>
                                 <button class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-3 px-3 rounded-lg transition-all duration-200 flex items-center justify-center" 

@@ -23,6 +23,9 @@ public class GameState
     public bool IsGameWon { get; set; }
     public bool PencilMode { get; set; }
     
+    // Simplified pause functionality - just a flag
+    public bool IsPaused { get; set; }
+    
     // Timing information
     public DateTime StartTime { get; set; }
     public DateTime LastMoveTime { get; set; }

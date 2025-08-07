@@ -29,7 +29,8 @@ public class GameStatePersistenceService
         bool pencilMode,
         bool[,] wrongCells,
         (int row, int col)? selectedCell,
-        GameTimingService? timingService)
+        GameTimingService? timingService,
+        bool isGamePaused = false)
     {
         if (board == null || timingService == null) return new GameState();
         
@@ -43,6 +44,7 @@ public class GameStatePersistenceService
             IsGameOver = isGameOver,
             IsGameWon = isGameWon,
             PencilMode = pencilMode,
+            IsPaused = isGamePaused,
             StartTime = timingService.StartTime,
             LastMoveTime = timingService.LastMoveTime,
             TotalElapsed = timingService.GetTotalElapsed()
@@ -157,11 +159,11 @@ public class GameStatePersistenceService
             // Restore timing state first, then resume timer if game is active
             if (timingService != null)
             {
-                // Use the new method that properly handles total elapsed time
+                // Use the new method that properly handles total elapsed time and pause state
                 if (gameState.TotalElapsed != TimeSpan.Zero)
                 {
                     // If we have total elapsed time, use it for more accurate restoration
-                    timingService.RestoreTimeWithTotal(gameState.StartTime, gameState.LastMoveTime, gameState.TotalElapsed);
+                    timingService.RestoreWithPauseState(gameState.StartTime, gameState.LastMoveTime, gameState.TotalElapsed, gameState.IsPaused);
                 }
                 else
                 {
@@ -169,8 +171,8 @@ public class GameStatePersistenceService
                     timingService.RestoreTime(gameState.StartTime, gameState.LastMoveTime);
                 }
                 
-                // Resume the timer if the game is still active (not over and not won)
-                if (!gameState.IsGameOver && !gameState.IsGameWon)
+                // Resume the timer if the game is still active (not over, not won, and not paused)
+                if (!gameState.IsGameOver && !gameState.IsGameWon && !gameState.IsPaused)
                 {
                     timingService.ResumeTimer();
                 }

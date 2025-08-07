@@ -14,10 +14,12 @@ public class GameTimingService : IDisposable
     private readonly Action onTimeUpdated;
     private TimeSpan cumulativeElapsed = TimeSpan.Zero; // Total time elapsed (including previous sessions)
     private DateTime sessionStartTime; // When the current timer session started
+    private bool isPaused = false;
 
     public DateTime StartTime => startTime;
     public DateTime LastMoveTime => lastMoveTime;
     public string ElapsedTime => elapsedTime;
+    public bool IsPaused => isPaused;
 
     public GameTimingService(Action onTimeUpdated)
     {
@@ -31,6 +33,7 @@ public class GameTimingService : IDisposable
         lastMoveTime = DateTime.Now;
         sessionStartTime = DateTime.Now;
         cumulativeElapsed = TimeSpan.Zero;
+        isPaused = false;
         
         // Calculate initial elapsed time
         UpdateElapsedTime();
@@ -40,7 +43,7 @@ public class GameTimingService : IDisposable
 
     private void StartTimerInternal()
     {
-        if (timer == null)
+        if (timer == null && !isPaused)
         {
             sessionStartTime = DateTime.Now;
             
@@ -61,16 +64,56 @@ public class GameTimingService : IDisposable
         }
     }
 
-    public void StopTimer()
+    public void PauseTimer()
     {
-        if (timer != null)
+        if (!isPaused && timer != null)
         {
-            // Add the current session time to cumulative elapsed before stopping
+            // Add current session time to cumulative elapsed before pausing
             if (sessionStartTime != default)
             {
                 cumulativeElapsed += DateTime.Now - sessionStartTime;
             }
             
+            isPaused = true;
+            StopTimerInternal();
+            UpdateElapsedTime();
+            onTimeUpdated?.Invoke();
+        }
+    }
+
+    public void ResumeTimer()
+    {
+        if (isPaused)
+        {
+            isPaused = false;
+            StartTimerInternal();
+        }
+        else if (timer == null)
+        {
+            // Resume the timer for a restored game
+            StartTimerInternal();
+        }
+    }
+
+    public void StopTimer()
+    {
+        if (timer != null)
+        {
+            // Add the current session time to cumulative elapsed before stopping
+            if (sessionStartTime != default && !isPaused)
+            {
+                cumulativeElapsed += DateTime.Now - sessionStartTime;
+            }
+            
+            StopTimerInternal();
+        }
+        isPaused = false;
+    }
+
+    private void StopTimerInternal()
+    {
+        if (timer != null)
+        {
             timer.Stop();
             timer.Dispose();
             timer = null;
@@ -79,7 +122,10 @@ public class GameTimingService : IDisposable
 
     public void RecordMove()
     {
-        lastMoveTime = DateTime.Now;
+        if (!isPaused)
+        {
+            lastMoveTime = DateTime.Now;
+        }
     }
 
     public void RestoreTime(DateTime originalStart, DateTime originalLastMove)
@@ -107,20 +153,17 @@ public class GameTimingService : IDisposable
         onTimeUpdated?.Invoke();
     }
 
-    public void ResumeTimer()
+    public void RestoreWithPauseState(DateTime originalStart, DateTime originalLastMove, TimeSpan totalElapsed, bool wasPaused)
     {
-        // Resume the timer for a restored game
-        if (timer == null)
-        {
-            StartTimerInternal();
-        }
+        RestoreTimeWithTotal(originalStart, originalLastMove, totalElapsed);
+        isPaused = wasPaused;
     }
 
     private void UpdateElapsedTime()
     {
         TimeSpan totalElapsed;
         
-        if (timer != null && timer.Enabled && sessionStartTime != default)
+        if (timer != null && timer.Enabled && sessionStartTime != default && !isPaused)
         {
             // Timer is running - add current session time to cumulative elapsed
             var currentSessionElapsed = DateTime.Now - sessionStartTime;
@@ -128,7 +171,7 @@ public class GameTimingService : IDisposable
         }
         else
         {
-            // Timer is not running - just use cumulative elapsed
+            // Timer is not running or paused - just use cumulative elapsed
             totalElapsed = cumulativeElapsed;
         }
         
@@ -137,7 +180,7 @@ public class GameTimingService : IDisposable
 
     public TimeSpan GetTotalElapsed()
     {
-        if (timer != null && timer.Enabled && sessionStartTime != default)
+        if (timer != null && timer.Enabled && sessionStartTime != default && !isPaused)
         {
             // Timer is running - add current session time to cumulative elapsed
             var currentSessionElapsed = DateTime.Now - sessionStartTime;
@@ -145,7 +188,7 @@ public class GameTimingService : IDisposable
         }
         else
         {
-            // Timer is not running - just return cumulative elapsed
+            // Timer is not running or paused - just return cumulative elapsed
             return cumulativeElapsed;
         }
     }

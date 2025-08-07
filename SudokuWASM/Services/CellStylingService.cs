@@ -30,6 +30,19 @@ public class CellStylingService
         return string.Join(" ", baseClasses.Concat(cellTypeClasses).Concat(highlightClasses));
     }
 
+    public string GetCellTextCSS(int row, int col)
+    {
+        if (board == null) return "";
+        
+        // Check if this cell has a wrong value
+        if (wrongCells[row, col])
+        {
+            return "text-red-600 font-bold";
+        }
+        
+        return "";
+    }
+
     private bool IsSelectedCell(int row, int col)
     {
         return selectedCell?.row == row && selectedCell?.col == col;
@@ -44,6 +57,12 @@ public class CellStylingService
 
     private string[] GetCellTypeClasses(int row, int col, bool isSelected)
     {
+        // If the cell is wrong, override the normal text color classes
+        if (wrongCells[row, col] && board!.Grid[row, col] != 0)
+        {
+            return GetWrongCellClasses(isSelected);
+        }
+        
         if (board!.HintCells[row, col])
             return GetHintCellClasses(isSelected);
         
@@ -54,6 +73,14 @@ public class CellStylingService
             return GetCorrectSolvedCellClasses(isSelected);
         
         return GetDefaultCellClasses(isSelected);
+    }
+
+    private string[] GetWrongCellClasses(bool isSelected)
+    {
+        var classes = new List<string> { "text-red-600", "font-bold" };
+        if (!isSelected)
+            classes.Add("bg-red-50");
+        return classes.ToArray();
     }
 
     private string[] GetHintCellClasses(bool isSelected)
@@ -93,7 +120,7 @@ public class CellStylingService
         return (isSelected, wrongCells[row, col], IsNumberHighlighted(row, col), IsMasterHighlighted(row, col)) switch
         {
             (true, _, _, _)            => ["bg-blue-200", "z-10"],
-            (false, true, _, _)        => ["bg-red-100", "text-red-700"],
+            (false, true, _, _)        => ["bg-red-100"], // Remove text color here since it's handled in GetCellTypeClasses
             (false, false, true, _)    => ["!bg-blue-400"],
             (false, false, false, true) => ["!bg-blue-300"],
             _                          => []
