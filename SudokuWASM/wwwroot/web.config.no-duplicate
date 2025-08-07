@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<configuration>
+  <system.webServer>
+    <staticContent>
+      <!-- Remove existing MIME mappings first to avoid conflicts -->
+      <remove fileExtension=".wasm" />
+      <remove fileExtension=".dll" />
+      <remove fileExtension=".dat" />
+      <remove fileExtension=".blat" />
+      <remove fileExtension=".webcil" />
+      <remove fileExtension=".pdb" />
+      <remove fileExtension=".webmanifest" />
+      
+      <!-- Add MIME mappings for WebAssembly files -->
+      <mimeMap fileExtension=".wasm" mimeType="application/wasm" />
+      <mimeMap fileExtension=".dll" mimeType="application/octet-stream" />
+      <mimeMap fileExtension=".dat" mimeType="application/octet-stream" />
+      <mimeMap fileExtension=".blat" mimeType="application/octet-stream" />
+      <mimeMap fileExtension=".webcil" mimeType="application/octet-stream" />
+      <mimeMap fileExtension=".pdb" mimeType="application/octet-stream" />
+      <mimeMap fileExtension=".webmanifest" mimeType="application/manifest+json" />
+    </staticContent>
+    
+    <defaultDocument>
+      <files>
+        <clear />
+        <add value="index.html" />
+      </files>
+    </defaultDocument>
+  </system.webServer>
+</configuration>

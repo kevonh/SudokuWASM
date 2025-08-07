@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<configuration>
+  <system.webServer>
+    <staticContent>
+      <!-- WebAssembly MIME types -->
+      <mimeMap fileExtension=".blat" mimeType="application/octet-stream" />
+      <mimeMap fileExtension=".dat" mimeType="application/octet-stream" />
+      <mimeMap fileExtension=".dll" mimeType="application/octet-stream" />
+      <mimeMap fileExtension=".json" mimeType="application/json" />
+      <mimeMap fileExtension=".pdb" mimeType="application/octet-stream" />
+      <mimeMap fileExtension=".wasm" mimeType="application/wasm" />
+      <mimeMap fileExtension=".woff" mimeType="application/font-woff" />
+      <mimeMap fileExtension=".woff2" mimeType="application/font-woff2" />
+      <mimeMap fileExtension=".webmanifest" mimeType="application/manifest+json" />
+    </staticContent>
+    
+    <!-- URL Rewriting for SPA routing -->
+    <rewrite>
+      <rules>
+        <rule name="SPA fallback routing" stopProcessing="true">
+          <match url=".*" />
+          <conditions logicalGrouping="MatchAll">
+            <add input="{REQUEST_FILENAME}" matchType="IsFile" negate="true" />
+            <add input="{REQUEST_FILENAME}" matchType="IsDirectory" negate="true" />
+          </conditions>
+          <action type="Rewrite" url="/" />
+        </rule>
+      </rules>
+    </rewrite>
+    
+    <!-- Default document -->
+    <defaultDocument enabled="true">
+      <files>
+        <add value="index.html" />
+      </files>
+    </defaultDocument>
+  </system.webServer>
+</configuration>

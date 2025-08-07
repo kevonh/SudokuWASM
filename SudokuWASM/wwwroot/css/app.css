@@ -3,10 +3,35 @@ html, body {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    /* Prevent full height in PWA mode */
+    height: auto;
+    min-height: 100vh;
+    max-height: none;
+}
+
+#app {
+    /* Ensure the app doesn't force full height */
+    height: auto;
+    min-height: 100vh;
 }
 
 *, *::before, *::after {
     box-sizing: inherit;
+}
+
+/* PWA specific styles */
+@media (display-mode: standalone) {
+    body {
+        /* Additional control for PWA standalone mode */
+        height: auto;
+        min-height: 100vh;
+        overflow-y: auto;
+    }
+    
+    .pwa-container {
+        min-height: auto !important;
+        height: auto !important;
+    }
 }
 
 #blazor-error-ui {

@@ -3,7 +3,7 @@
   "short_name": "Sudoku",
   "id": "./",
   "start_url": "./",
-  "display": "fullscreen",
+  "display": "standalone",
   "screen_orientation": "portrait",
   "background_color": "#ffffff",
   "theme_color": "#6366f1",

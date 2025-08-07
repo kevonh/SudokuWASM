@@ -85,7 +85,42 @@
         <span class="dismiss"><i class="bi bi-x-lg"></i></span>
     </div>
     <script src="_framework/blazor.webassembly.js"></script>
-    <script>navigator.serviceWorker.register('service-worker.js');</script>
+    <script>
+        // Enhanced service worker registration
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function () {
+                navigator.serviceWorker.register('service-worker.js')
+                    .then(function (registration) {
+                        console.log('Service Worker registered successfully:', registration.scope);
+
+                        // Listen for updates
+                        registration.addEventListener('updatefound', function () {
+                            console.log('Service Worker update found');
+                            const newWorker = registration.installing;
+
+                            newWorker.addEventListener('statechange', function () {
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    console.log('Service Worker updated, new version available');
+                                    // Optionally notify user about update
+                                }
+                            });
+                        });
+                    })
+                    .catch(function (error) {
+                        console.log('Service Worker registration failed:', error);
+                    });
+
+                // Listen for online/offline events
+                window.addEventListener('online', function () {
+                    console.log('App is online');
+                });
+
+                window.addEventListener('offline', function () {
+                    console.log('App is offline');
+                });
+            });
+        }
+    </script>
 </body>
 
 </html>
