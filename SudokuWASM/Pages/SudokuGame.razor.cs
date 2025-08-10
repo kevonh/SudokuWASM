@@ -4,30 +4,18 @@ using Sudoku.Models;
 using SudokuWASM.Services;
 
 namespace SudokuWASM.Pages;
-public partial class SudokuGame 
-{
-    [Inject] private IGamePersistenceService PersistenceService { get; set; } = default!;
-    [Inject] private GameStatePersistenceService StatePersistenceService { get; set; } = default!;
-    [Inject] private IPuzzleGeneratorService PuzzleGenerator { get; set; } = default!;
-    [Inject] private IGameEngine GameEngine { get; set; } = default!;
 
+public partial class SudokuGame : IDisposable
+{
+    [Inject] private IGameEngine GameEngine { get; set; } = default!;
     private Sudoku.SudokuBoard? board;
-    private string message = string.Empty;
-    private int wrongGuessCount = 0;
-    private int currentScore = 0;
-    private int hintCount = 0;
-    private const int MaxWrongGuesses = 4;
-    private bool isGameOver = false;
-    private bool isGameWon = false;
     private bool[,] wrongCells = new bool[9, 9];
-    private (int row, int col)? selectedCell = null;
-    private bool isInitialized = false;
-    private bool showOptionsModal = false;
-    private string selectedDifficulty = "Medium";
     private bool showStatistics = false;
     private bool showConfirmClearStats = false;
+    private bool isInitialized = false;
+    private bool showOptionsModal = false;
     private bool isPointsAnimating = false;
-    private CancellationTokenSource? generationCts;
+    private const int maxWrongGuesses = 4;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -42,27 +30,70 @@ public partial class SudokuGame
 
     private void OnEngineStateChanged()
     {
+        board = GameEngine.Board;
+        UpdateWrongCells();
         InvokeAsync(StateHasChanged);
     }
 
-    // Called by GameOptionsModal when the user starts a new game.
-    private async Task CreateNewGameAsync(PuzzleOptions options)
+    private void UpdateWrongCells()
     {
-        selectedDifficulty = options.Difficulty switch
+        if (board == null) return;
+        for (int r = 0; r < 9; r++)
         {
-            DifficultyLevel.Easy => "Easy",
-            DifficultyLevel.Medium => "Medium",
-            DifficultyLevel.Hard => "Hard",
-            DifficultyLevel.Expert => "Expert",
-            _ => "Medium"
-        };
-        showOptionsModal = false;
-        await GameEngine.InitializeNewGameAsync(options);
+            for (int c = 0; c < 9; c++)
+            {
+                wrongCells[r, c] = board.Grid[r, c] != 0 && board.Grid[r, c] != board.Solution[r, c];
+            }
+        }
     }
 
-    private void ToggleOptionsModal(bool value)
+    private string GetCellCSS(int row, int col)
     {
-        showOptionsModal = value;
+        if (board == null) return "";
+        var styling = new Sudoku.Services.CellStylingService(board, wrongCells, GameEngine.SelectedCell, false);
+        return styling.GetCellCSS(row, col);
+    }
+
+    private string GetCellTextCSS(int row, int col)
+    {
+        if (board == null) return "";
+        var styling = new Sudoku.Services.CellStylingService(board, wrongCells, GameEngine.SelectedCell, false);
+        return styling.GetCellTextCSS(row, col);
+    }
+
+    private string GetNotesTextCSS(bool isMobile)
+    {
+        if (board == null) return "";
+        var styling = new Sudoku.Services.CellStylingService(board, wrongCells, GameEngine.SelectedCell, isMobile);
+        return styling.GetNotesTextCSS();
+    }
+
+    private Task ShowStatisticsAsync()
+    {
+        showStatistics = true;
+        GameEngine.ShowStatistics();
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private void HideStatistics()
+    {
+        showStatistics = false;
+        GameEngine.HideStatistics();
+        StateHasChanged();
+    }
+
+    private void RequestClearStats()
+    {
+        showConfirmClearStats = true;
+        GameEngine.RequestClearStats();
+        StateHasChanged();
+    }
+
+    private async Task ConfirmClearStats()
+    {
+        showConfirmClearStats = false;
+        await GameEngine.ConfirmClearStatsAsync();
         StateHasChanged();
     }
 
@@ -76,14 +107,15 @@ public partial class SudokuGame
         GameEngine.SelectCell(cell.row, cell.col);
     }
 
-    private void OnCellClick(int row, int col)
+    private async Task GiveHint()
     {
-        GameEngine.SelectCell(row, col);
+        await GameEngine.GiveHintAsync();
     }
 
-    private void Erase()
+    private async Task CreateNewGameAsync(PuzzleOptions options)
     {
-        GameEngine.Erase();
+        showOptionsModal = false;
+        await GameEngine.InitializeNewGameAsync(options);
     }
 
     private void Undo()
@@ -91,61 +123,23 @@ public partial class SudokuGame
         GameEngine.Undo();
     }
 
+    private void Erase()
+    {
+        GameEngine.Erase();
+    }
+
     private void TogglePencilMode()
     {
         GameEngine.TogglePencilMode();
     }
 
-    private async Task GiveHint()
+    private void ToggleOptionsModal(bool value)
     {
-        await GameEngine.GiveHintAsync();
+        showOptionsModal = value;
     }
 
-    private string GetCellCSS(int row, int col)
+    public void Dispose()
     {
-        if (board == null) return "";
-        var styling = new Sudoku.Services.CellStylingService(board, wrongCells, selectedCell, false);
-        return styling.GetCellCSS(row, col);
-    }
-
-    private string GetCellTextCSS(int row, int col)
-    {
-        if (board == null) return "";
-        var styling = new Sudoku.Services.CellStylingService(board, wrongCells, selectedCell, false);
-        return styling.GetCellTextCSS(row, col);
-    }
-
-    private string GetNotesTextCSS(bool isMobile)
-    {
-        if (board == null) return "";
-        var styling = new Sudoku.Services.CellStylingService(board, wrongCells, selectedCell, isMobile);
-        return styling.GetNotesTextCSS();
-    }
-
-    private Task ShowStatisticsAsync()
-    {
-        showStatistics = true;
-        StateHasChanged();
-        return Task.CompletedTask;
-    }
-
-    private void HideStatistics()
-    {
-        showStatistics = false;
-        StateHasChanged();
-    }
-
-    private void RequestClearStats()
-    {
-        showConfirmClearStats = true;
-        StateHasChanged();
-    }
-
-    private Task ConfirmClearStats()
-    {
-        showConfirmClearStats = false;
-        var gameStatistics = new GameStatistics(); // Reset stats or call your persistence layer BOOGER
-        StateHasChanged();
-        return Task.CompletedTask;
+        GameEngine.StateChanged -= OnEngineStateChanged;
     }
 }

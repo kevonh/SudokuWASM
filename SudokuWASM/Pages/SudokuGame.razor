@@ -1,12 +1,13 @@
 ﻿@page "/game"
 @using Sudoku.Models
 @using SudokuWASM.Components
+@using SudokuWASM.Services
 
 <GameOptionsModal Show="showOptionsModal" OnStart="CreateNewGameAsync"
-                  OnCancel="() => ToggleOptionsModal(false)" />
+                  OnCancel="@(() => showOptionsModal = false)" />
 
 <button class="m-4 px-4 py-2 rounded bg-brandBackground hover:bg-brandBackgroundHover text-foregroundOnBrand"
-        @onclick="() => ToggleOptionsModal(true)">
+        @onclick="@(() => showOptionsModal = true)">
     New Game
 </button>
 
@@ -17,7 +18,7 @@
            ElapsedTime="@GameEngine.ElapsedTime"
            HintCount="@GameEngine.HintCount"
            WrongGuessCount="@GameEngine.WrongGuessCount"
-           MaxWrongGuesses="@MaxWrongGuesses"
+           MaxWrongGuesses="@maxWrongGuesses"
            Message="@GameEngine.Message" />
 
 @if (GameEngine.Board is null)
@@ -35,7 +36,7 @@ else
                 NotesTextClass="@GetNotesTextCSS(false)"
                 IsMobile="false"
                 OnResumeGame="GameEngine.ResumeGame" />
-    <GameControls OnNewGame="() => ToggleOptionsModal(true)"
+    <GameControls OnNewGame="@(() => showOptionsModal = true)"
                   OnShowStatistics="ShowStatisticsAsync"
                   OnUndo="Undo"
                   OnErase="Erase"
@@ -56,5 +57,5 @@ else
 <ConfirmDialog IsVisible="showConfirmClearStats"
                Message="Are you sure you want to clear all statistics?"
                OnConfirm="ConfirmClearStats"
-               OnCancel="() => showConfirmClearStats = false" />
+               OnCancel="@(() => showConfirmClearStats = false)" />
 
