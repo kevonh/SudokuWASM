@@ -1,0 +1,26 @@
+@* Components/ConfirmDialog.razor *@
+@if (IsVisible)
+{
+    <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div class="bg-white p-4 rounded-lg shadow-lg max-w-sm w-full">
+            <p class="mb-4">@Message</p>
+            <div class="flex justify-end space-x-2">
+                <button class="bg-red-500 text-white py-1 px-3 rounded"
+                        @onclick="() => OnConfirm.InvokeAsync()">
+                    Yes
+                </button>
+                <button class="bg-gray-300 text-gray-700 py-1 px-3 rounded"
+                        @onclick="() => OnCancel.InvokeAsync()">
+                    No
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsVisible { get; set; }
+    [Parameter] public string Message { get; set; } = "";
+    [Parameter] public EventCallback OnConfirm { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+}
