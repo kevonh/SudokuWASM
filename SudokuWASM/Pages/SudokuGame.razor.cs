@@ -29,11 +29,8 @@ public partial class SudokuGame : IDisposable
     private bool isPointsAnimating = false;
     private GameStatistics gameStatistics = new();
     private string currentGameId = Guid.NewGuid().ToString();
-
-    // Simplified pause functionality - we'll use save/restore instead of separate arrays
     private bool isGamePaused = false;
 
-    // Properties for advanced functionality
     private bool CanEditSelectedCell => 
         selectedCell.HasValue && 
         board != null && 
@@ -57,18 +54,14 @@ public partial class SudokuGame : IDisposable
 
     private async Task InitializeGameAsync()
     {
-        // Check if there's a saved game first
         var savedGame = await PersistenceService.LoadGameStateAsync();
-        
         if (savedGame != null && !savedGame.IsGameWon && !savedGame.IsGameOver)
         {
-            // Load the saved game
             LoadGameFromState(savedGame);
             message = "Resumed previous game";
         }
         else
         {
-            // Start a new game
             InitializeNewGame();
         }
     }
@@ -76,16 +69,12 @@ public partial class SudokuGame : IDisposable
     private void LoadGameFromState(GameState gameState)
     {
         board = new Sudoku.SudokuBoard();
-        
-        // Restore board state
         GameState.CopyToMultiArray(gameState.Grid, board.Grid);
         GameState.CopyToMultiArray(gameState.Solution, board.Solution);
         GameState.CopyToMultiArray(gameState.FixedCells, board.FixedCells);
         GameState.CopyToMultiArray(gameState.HintCells, board.HintCells);
         GameState.CopyToMultiArray(gameState.CorrectlySolvedCells, board.CorrectlySolvedCells);
         GameState.CopyToMultiArray(gameState.WrongCells, wrongCells);
-        
-        // Restore notes
         for (int r = 0; r < 9; r++)
         {
             for (int c = 0; c < 9; c++)
@@ -101,8 +90,6 @@ public partial class SudokuGame : IDisposable
                 }
             }
         }
-        
-        // Restore game state
         currentGameId = gameState.Id;
         selectedDifficulty = gameState.SelectedDifficulty;
         wrongGuessCount = gameState.WrongGuessCount;
@@ -111,25 +98,18 @@ public partial class SudokuGame : IDisposable
         isGameOver = gameState.IsGameOver;
         isGameWon = gameState.IsGameWon;
         pencilMode = gameState.PencilMode;
-        
-        // Restore pause state - always start paused regardless of saved state
         isGamePaused = true;
         ClearVisibleBoard();
-        
         if (gameState.SelectedRow.HasValue && gameState.SelectedCol.HasValue)
         {
             selectedCell = (gameState.SelectedRow.Value, gameState.SelectedCol.Value);
         }
-        
-        // Initialize timing service and restore time
         gameTimingService = new GameTimingService(OnTimerUpdated);
-        gameTimingService.RestoreWithPauseState(gameState.StartTime, gameState.LastMoveTime, gameState.TotalElapsed, true); // always paused
-        // Do NOT resume timer here
+        gameTimingService.RestoreWithPauseState(gameState.StartTime, gameState.LastMoveTime, gameState.TotalElapsed, true);
     }
 
     private void InitializeNewGame()
     {
-        // Always reset to default difficulty if not set
         if (string.IsNullOrEmpty(selectedDifficulty) || !new[]{"Easy","Medium","Hard","Expert"}.Contains(selectedDifficulty))
         {
             selectedDifficulty = "Medium";
@@ -143,19 +123,14 @@ public partial class SudokuGame : IDisposable
         hintCount = 0;
         isGameOver = false;
         isGameWon = false;
-        isGamePaused = true; // always start paused
+        isGamePaused = true;
         selectedCell = null;
         pencilMode = false;
         message = "New puzzle generated!";
-        
-        // Initialize timing service
         gameTimingService?.Dispose();
         gameTimingService = new GameTimingService(OnTimerUpdated);
-        // Do NOT start timer here
-        
-        // Save the initial game state
         _ = Task.Run(SaveGameStateAsync);
-        StateHasChanged(); // Ensure UI updates
+        StateHasChanged();
     }
 
     private void OnTimerUpdated()
@@ -170,15 +145,12 @@ public partial class SudokuGame : IDisposable
     private void TogglePause()
     {
         if (board == null || isGameOver || isGameWon) return;
-
         if (isGamePaused)
         {
-            // Resume the game
             ResumeGame();
         }
         else
         {
-            // Pause the game
             PauseGame();
         }
     }
@@ -186,36 +158,23 @@ public partial class SudokuGame : IDisposable
     private void PauseGame()
     {
         if (board == null || isGamePaused) return;
-
-        // Save current state first (this preserves the actual progress in the saved game)
         _ = Task.Run(SaveGameStateAsync);
-
-        // Clear the visible board (but keep fixed cells visible)
         ClearVisibleBoard();
-
-        // Pause the timer
         gameTimingService?.PauseTimer();
-        
         isGamePaused = true;
         message = "Game paused";
-        
         StateHasChanged();
     }
 
     private void ResumeGame()
     {
         if (board == null || !isGamePaused) return;
-
-        // Reload from saved state to restore the actual progress
         _ = Task.Run(async () =>
         {
             var savedGame = await PersistenceService.LoadGameStateAsync();
             if (savedGame != null)
             {
-                // Restore the board state without changing pause status yet
                 GameState.CopyToMultiArray(savedGame.Grid, board.Grid);
-                
-                // Restore notes
                 for (int r = 0; r < 9; r++)
                 {
                     for (int c = 0; c < 9; c++)
@@ -232,14 +191,9 @@ public partial class SudokuGame : IDisposable
                     }
                 }
             }
-
-            // Resume the timer
             gameTimingService?.ResumeTimer();
-            
             isGamePaused = false;
             message = "Game resumed";
-            
-            // Save the updated pause state
             await SaveGameStateAsync();
             await InvokeAsync(StateHasChanged);
         });
@@ -248,8 +202,6 @@ public partial class SudokuGame : IDisposable
     private void ClearVisibleBoard()
     {
         if (board == null) return;
-
-        // Clear all user-entered values but keep fixed cells
         for (int r = 0; r < 9; r++)
         {
             for (int c = 0; c < 9; c++)
@@ -265,7 +217,6 @@ public partial class SudokuGame : IDisposable
 
     private void OnGridClick()
     {
-        // If the game is paused and user clicks anywhere on the grid, resume
         if (isGamePaused)
         {
             ResumeGame();
@@ -284,20 +235,16 @@ public partial class SudokuGame : IDisposable
     private void OnCellClick(int row, int col)
     {
         if (board == null || isGameOver || isGameWon) return;
-        
-        // If paused, resume the game instead of selecting a cell
         if (isGamePaused)
         {
             ResumeGame();
             return;
         }
-        
         selectedCell = (row, col);
         _ = Task.Run(SaveGameStateAsync);
         StateHasChanged();
     }
 
-    // Helper method to handle tuple parameter for OnCellClick
     private void OnCellClickTuple((int row, int col) cellCoordinates)
     {
         OnCellClick(cellCoordinates.row, cellCoordinates.col);
@@ -315,19 +262,15 @@ public partial class SudokuGame : IDisposable
     {
         if (board == null || selectedCell == null || isGameOver || isGameWon || isGamePaused) return;
         var (row, col) = selectedCell.Value;
-
         if (!board.CanEditCell(row, col)) return;
-
         if (pencilMode)
         {
-            // Toggle note
             board.ToggleNote(row, col, number);
         }
         else
         {
             PlaceNumber(number);
         }
-        
         _ = Task.Run(SaveGameStateAsync);
         StateHasChanged();
     }
@@ -336,20 +279,16 @@ public partial class SudokuGame : IDisposable
     {
         if (board == null || selectedCell == null || isGameOver || isGameWon || isGamePaused) return;
         var (row, col) = selectedCell.Value;
-
         if (!board.CanEditCell(row, col)) return;
-
         gameTimingService?.RecordMove();
-
         if (board.IsCorrectMove(row, col, number))
         {
             board.SetCell(row, col, number);
-            board.ClearNotes(row, col); // Clear notes when placing a number
+            board.ClearNotes(row, col);
             currentScore += GetPointsForMove();
             message = $"+{GetPointsForMove()} points!";
             wrongCells[row, col] = false;
             _ = Task.Run(AnimatePointsAsync);
-
             if (board.IsComplete())
             {
                 isGameWon = true;
@@ -358,7 +297,7 @@ public partial class SudokuGame : IDisposable
                 _ = Task.Run(async () => {
                     await RecordCompletedGameAsync();
                     await UpdateStatisticsAsync();
-                    await PersistenceService.DeleteGameStateAsync(); // Clear saved game
+                    await PersistenceService.DeleteGameStateAsync();
                 });
             }
             else
@@ -368,14 +307,12 @@ public partial class SudokuGame : IDisposable
         }
         else
         {
-            // Place the wrong number so it can be displayed and styled in red
             board.SetCell(row, col, number);
-            board.ClearNotes(row, col); // Clear notes when placing a number
+            board.ClearNotes(row, col);
             wrongGuessCount++;
             wrongCells[row, col] = true;
             currentScore = Math.Max(0, currentScore - 5);
             message = "Wrong move! (-5 points)";
-
             if (wrongGuessCount >= maxWrongGuesses)
             {
                 isGameOver = true;
@@ -384,7 +321,7 @@ public partial class SudokuGame : IDisposable
                 _ = Task.Run(async () => {
                     await RecordCompletedGameAsync();
                     await UpdateStatisticsAsync();
-                    await PersistenceService.DeleteGameStateAsync(); // Clear saved game
+                    await PersistenceService.DeleteGameStateAsync();
                 });
             }
             else
@@ -392,14 +329,12 @@ public partial class SudokuGame : IDisposable
                 _ = Task.Run(SaveGameStateAsync);
             }
         }
-
         StateHasChanged();
     }
 
     private async Task SaveGameStateAsync()
     {
         if (board == null || gameTimingService == null || isGameOver || isGameWon) return;
-
         try
         {
             var gameState = StatePersistenceService.CreateGameState(
@@ -417,7 +352,6 @@ public partial class SudokuGame : IDisposable
                 gameTimingService,
                 isGamePaused
             );
-
             await PersistenceService.SaveGameStateAsync(gameState);
         }
         catch (Exception ex)
@@ -429,7 +363,6 @@ public partial class SudokuGame : IDisposable
     private async Task RecordCompletedGameAsync()
     {
         if (gameTimingService == null) return;
-
         var completedGame = new CompletedGame
         {
             Id = currentGameId,
@@ -441,7 +374,6 @@ public partial class SudokuGame : IDisposable
             IsPerfect = wrongGuessCount == 0 && hintCount == 0,
             CompletedAt = DateTime.Now
         };
-
         await PersistenceService.RecordCompletedGameAsync(completedGame);
     }
 
@@ -469,8 +401,6 @@ public partial class SudokuGame : IDisposable
     private bool IsNumberPadButtonDisabled(int number)
     {
         if (board == null || isGamePaused) return true;
-        
-        // Count how many times this number appears on the board
         int count = 0;
         for (int r = 0; r < 9; r++)
         {
@@ -480,15 +410,13 @@ public partial class SudokuGame : IDisposable
                     count++;
             }
         }
-        
-        return count >= 9; // Disable if all 9 instances are placed
+        return count >= 9;
     }
 
     private void Erase()
     {
         if (board == null || selectedCell == null || isGameOver || isGameWon || isGamePaused) return;
         var (row, col) = selectedCell.Value;
-
         if (board.CanEditCell(row, col))
         {
             board.SetCell(row, col, 0);
@@ -502,14 +430,12 @@ public partial class SudokuGame : IDisposable
 
     private void Undo()
     {
-        // Simple undo - just erase the current cell
         Erase();
     }
 
     private void TogglePencilMode()
     {
         if (isGamePaused) return;
-        
         pencilMode = !pencilMode;
         message = pencilMode ? "Notes mode ON" : "Notes mode OFF";
         _ = Task.Run(SaveGameStateAsync);
@@ -519,7 +445,6 @@ public partial class SudokuGame : IDisposable
     private void GiveHint()
     {
         if (board == null || isGamePaused) return;
-
         var emptyCells = new List<(int row, int col)>();
         for (int r = 0; r < 9; r++)
         {
@@ -529,7 +454,6 @@ public partial class SudokuGame : IDisposable
                     emptyCells.Add((r, c));
             }
         }
-
         if (emptyCells.Count > 0)
         {
             var random = new Random();
@@ -548,8 +472,11 @@ public partial class SudokuGame : IDisposable
 
     private void SetDifficulty(string difficulty)
     {
-        selectedDifficulty = difficulty;
-        StateHasChanged();
+        if (selectedDifficulty != difficulty)
+        {
+            selectedDifficulty = difficulty;
+            GenerateNewGame();
+        }
     }
 
     private void NewGame()
@@ -559,7 +486,6 @@ public partial class SudokuGame : IDisposable
 
     private void GenerateNewGame()
     {
-        // Clear any existing saved game
         _ = Task.Run(async () => await PersistenceService.DeleteGameStateAsync());
         InitializeNewGame();
         StateHasChanged();
@@ -592,8 +518,6 @@ public partial class SudokuGame : IDisposable
 
     private async Task UpdateStatisticsAsync()
     {
-        // Statistics are automatically updated by RecordCompletedGameAsync
-        // Just reload them to refresh the UI
         gameStatistics = await PersistenceService.GetStatisticsAsync();
     }
 
