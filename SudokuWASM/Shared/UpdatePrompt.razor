@@ -1,0 +1,54 @@
+@inject IUpdateChecker UpdateChecker
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+@implements IDisposable
+
+@if (showPrompt)
+{
+    <div class="fixed inset-0 flex items-center justify-center bg-background/80">
+        <div class="p-6 rounded-lg shadow-lg bg-background max-w-md text-center">
+            <h2 class="text-xl font-semibold text-foreground mb-4">Update Available</h2>
+            <p class="text-foreground mb-4">A new version of Sudoku is available. Would you like to update now?</p>
+            <div class="flex justify-center space-x-4">
+                <button class="px-4 py-2 rounded bg-brandBackground hover:bg-brandBackgroundHover text-foregroundOnBrand" @onclick="UpdateNow">Update</button>
+                <button class="px-4 py-2 rounded bg-stroke hover:bg-strokeHover text-foreground" @onclick="Dismiss">Later</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private bool showPrompt;
+
+    protected override void OnInitialized()
+    {
+        UpdateChecker.OnUpdateAvailable += HandleUpdateAvailable;
+        // Optional: check for update on startup
+        _ = UpdateChecker.CheckForUpdateAsync();
+        _ = UpdateChecker.RegisterServiceWorkerAsync();
+    }
+
+    private void HandleUpdateAvailable()
+    {
+        showPrompt = true;
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void UpdateNow()
+    {
+        showPrompt = false;
+        // Send message to skip waiting and reload the page
+        JS.InvokeVoidAsync("skipWaiting");
+        Navigation.NavigateTo(Navigation.Uri, forceLoad: true);
+    }
+
+    private void Dismiss()
+    {
+        showPrompt = false;
+    }
+
+    public void Dispose()
+    {
+        UpdateChecker.OnUpdateAvailable -= HandleUpdateAvailable;
+    }
+}

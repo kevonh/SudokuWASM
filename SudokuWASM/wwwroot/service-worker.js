@@ -1,7 +1,8 @@
 // Development service worker with basic offline support
 // This provides a fallback for offline scenarios during development
 
-const CACHE_NAME = 'sudoku-dev-cache-v1';
+const CACHE_VERSION = 'sudoku-cache-v1';
+const CACHE_NAME = CACHE_VERSION;
 const STATIC_CACHE = 'sudoku-static-v1';
 
 // Essential files to cache for offline functionality
@@ -132,3 +133,10 @@ function shouldCache(url) {
            url.endsWith('/') || 
            url.includes('index.html');
 }
+
+// Listen for SKIP_WAITING message from client
+self.addEventListener('message', (event) => {
+    if (event.data && event.data.type === 'SKIP_WAITING') {
+        self.skipWaiting();
+    }
+});

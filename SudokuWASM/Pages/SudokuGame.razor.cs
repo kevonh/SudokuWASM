@@ -1,12 +1,15 @@
 using Microsoft.AspNetCore.Components;
 using Sudoku.Services;
 using Sudoku.Models;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace SudokuWASM.Pages;
 public partial class SudokuGame : IDisposable
 {
     [Inject] private IGamePersistenceService PersistenceService { get; set; } = default!;
     [Inject] private GameStatePersistenceService StatePersistenceService { get; set; } = default!;
+    [Inject] private IPuzzleGeneratorService PuzzleGenerator { get; set; } = default!;
 
     private Sudoku.SudokuBoard? board;
     private string message = string.Empty;
@@ -30,6 +33,7 @@ public partial class SudokuGame : IDisposable
     private GameStatistics gameStatistics = new();
     private string currentGameId = Guid.NewGuid().ToString();
     private bool isGamePaused = false;
+    private CancellationTokenSource? generationCts;
 
     private bool CanEditSelectedCell => 
         selectedCell.HasValue && 
@@ -62,7 +66,7 @@ public partial class SudokuGame : IDisposable
         }
         else
         {
-            InitializeNewGame();
+            await InitializeNewGameAsync();
         }
     }
 
@@ -108,15 +112,28 @@ public partial class SudokuGame : IDisposable
         gameTimingService.RestoreWithPauseState(gameState.StartTime, gameState.LastMoveTime, gameState.TotalElapsed, true);
     }
 
-    private void InitializeNewGame()
+    private async Task InitializeNewGameAsync()
     {
         if (string.IsNullOrEmpty(selectedDifficulty) || !new[]{"Easy","Medium","Hard","Expert"}.Contains(selectedDifficulty))
         {
             selectedDifficulty = "Medium";
         }
         currentGameId = Guid.NewGuid().ToString();
-        board = new Sudoku.SudokuBoard();
-        board.GenerateNewPuzzle(GetDifficultyClues(selectedDifficulty)); 
+        generationCts?.Cancel();
+        generationCts = new CancellationTokenSource();
+        var options = new PuzzleOptions
+        {
+            Difficulty = selectedDifficulty switch
+            {
+                "Easy" => DifficultyLevel.Easy,
+                "Medium" => DifficultyLevel.Medium,
+                "Hard" => DifficultyLevel.Hard,
+                "Expert" => DifficultyLevel.Expert,
+                _ => DifficultyLevel.Medium
+            },
+            // Add more options as needed (Symmetry, Variant, Seed, ClueCount)
+        };
+        board = await PuzzleGenerator.GeneratePuzzleAsync(options, generationCts.Token);
         wrongCells = new bool[9, 9];
         wrongGuessCount = 0;
         currentScore = 0;
@@ -487,7 +504,7 @@ public partial class SudokuGame : IDisposable
     private void GenerateNewGame()
     {
         _ = Task.Run(async () => await PersistenceService.DeleteGameStateAsync());
-        InitializeNewGame();
+        _ = InitializeNewGameAsync();
         StateHasChanged();
     }
 

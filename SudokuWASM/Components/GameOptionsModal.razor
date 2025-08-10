@@ -1,0 +1,71 @@
+@using Sudoku.Models
+
+<div class="fixed inset-0 flex items-center justify-center bg-background/80" hidden="@(!Show)">
+    <div class="bg-background p-6 rounded-lg max-w-lg w-full">
+        <h3 class="text-lg font-semibold text-foreground mb-4">New Game Options</h3>
+        <div class="mb-4">
+            <label class="block text-foreground mb-1">Difficulty</label>
+            <select class="w-full p-2 border rounded" @bind="options.Difficulty">
+                @foreach (DifficultyLevel level in Enum.GetValues(typeof(DifficultyLevel)))
+                {
+                    <option value="@level">@level</option>
+                }
+            </select>
+        </div>
+        <div class="mb-4">
+            <label class="block text-foreground mb-1">Symmetry</label>
+            <select class="w-full p-2 border rounded" @bind="options.Symmetry">
+                @foreach (SymmetryStyle style in Enum.GetValues(typeof(SymmetryStyle)))
+                {
+                    <option value="@style">@style</option>
+                }
+            </select>
+        </div>
+        <div class="mb-4">
+            <label class="block text-foreground mb-1">Variant</label>
+            <select class="w-full p-2 border rounded" @bind="options.Variant">
+                @foreach (PuzzleVariant variant in Enum.GetValues(typeof(PuzzleVariant)))
+                {
+                    <option value="@variant">@variant</option>
+                }
+            </select>
+        </div>
+        <div class="mb-4">
+            <label class="block text-foreground mb-1">Custom clue count (optional)</label>
+            <input type="number" class="w-full p-2 border rounded" @bind="options.ClueCount" min="17" max="81" />
+        </div>
+        <div class="mb-4">
+            <label class="block text-foreground mb-1">Seed (optional)</label>
+            <input type="number" class="w-full p-2 border rounded" @bind="options.Seed" />
+        </div>
+        <div class="flex justify-end space-x-2">
+            <button class="px-4 py-2 rounded bg-stroke hover:bg-strokeHover text-foreground" @onclick="Cancel">Cancel</button>
+            <button class="px-4 py-2 rounded bg-brandBackground hover:bg-brandBackgroundHover text-foregroundOnBrand" @onclick="Start">Start</button>
+        </div>
+    </div>
+</div>
+
+@code {
+    private PuzzleOptions options = new();
+
+    [Parameter]
+    public EventCallback<PuzzleOptions> OnStart { get; set; }
+
+    [Parameter]
+    public EventCallback OnCancel { get; set; }
+
+    [Parameter]
+    public bool Show { get; set; }
+
+    private async Task Start()
+    {
+        await OnStart.InvokeAsync(options);
+        options = new();
+    }
+
+    private async Task Cancel()
+    {
+        await OnCancel.InvokeAsync();
+        options = new();
+    }
+}

@@ -1,110 +1,31 @@
-﻿@page "/"
-@using System.Timers
+﻿@page "/game"
+@using Sudoku.Models
 @using SudokuWASM.Components
-@inject IJSRuntime JSRuntime
-@inject ILogger<SudokuGame> Logger
-@implements IDisposable
+@inject IPuzzleGeneratorService PuzzleGenerator
 
-<div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 pwa-container">
-    <div class="w-full mx-auto px-1 py-1 sm:px-4 sm:py-4">    
-        @if (isLoading)
-        {
-            <LoadingScreen />
-        }
-        else if (board != null)
-        {
-            <!-- Mobile Layout -->
-            <MobileGameLayout Board="@board"
-                              IsGamePaused="@isGamePaused"
-                              IsGameOver="@isGameOver"
-                              IsGameWon="@isGameWon"
-                              CanUndo="@CanEditSelectedCell"
-                              CanErase="@CanEditSelectedCell"
-                              IsPencilMode="@pencilMode"
-                              IsPointsAnimating="@isPointsAnimating"
-                              Score="@currentScore"
-                              ElapsedTime="@elapsedTime"
-                              WrongGuessCount="@wrongGuessCount"
-                              MaxWrongGuesses="@maxWrongGuesses"
-                              HintCount="@hintCount"
-                              SelectedDifficulty="@selectedDifficulty"
-                              OnGridClick="@OnGridClick"
-                              OnResumeGame="@ResumeGame"
-                              OnCellClick="@OnCellClickTuple"
-                              OnUndo="@Undo"
-                              OnErase="@Erase"
-                              OnTogglePencilMode="@TogglePencilMode"
-                              OnGiveHint="@GiveHint"
-                              OnShowStatistics="@ShowStatisticsAsync"
-                              OnNumberPadClick="@OnNumberPadClick"
-                              OnTogglePause="@TogglePause"
-                              OnDifficultyChanged="@SetDifficulty"
-                              OnNewGame="@GenerateNewGame"
-                              GetCellCSS="@GetMobileCellCSS"
-                              GetCellTextCSS="@GetMobileCellTextCSS"
-                              NotesTextClass="@GetNotesTextCSS(true)"
-                              IsNumberDisabled="@IsNumberPadButtonDisabled" />
+<GameOptionsModal Show="showOptionsModal" OnStart="CreateNewGameAsync" OnCancel="() => showOptionsModal = false" />
 
-            <!-- Desktop Layout -->
-            <DesktopGameLayout Board="@board"
-                               IsGamePaused="@isGamePaused"
-                               IsGameOver="@isGameOver"
-                               IsGameWon="@isGameWon"
-                               CanUndo="@CanEditSelectedCell"
-                               CanErase="@CanEditSelectedCell"
-                               IsPencilMode="@pencilMode"
-                               IsPointsAnimating="@isPointsAnimating"
-                               Score="@currentScore"
-                               ElapsedTime="@elapsedTime"
-                               WrongGuessCount="@wrongGuessCount"
-                               MaxWrongGuesses="@maxWrongGuesses"
-                               HintCount="@hintCount"
-                               SelectedDifficulty="@selectedDifficulty"
-                               OnGridClick="@OnGridClick"
-                               OnResumeGame="@ResumeGame"
-                               OnCellClick="@OnCellClickTuple"
-                               OnUndo="@Undo"
-                               OnErase="@Erase"
-                               OnTogglePencilMode="@TogglePencilMode"
-                               OnGiveHint="@GiveHint"
-                               OnShowStatistics="@ShowStatisticsAsync"
-                               OnNumberPadClick="@OnNumberPadClick"
-                               OnTogglePause="@TogglePause"
-                               OnDifficultyChanged="@SetDifficulty"
-                               OnNewGame="@GenerateNewGame"
-                               GetCellCSS="@GetCellCSS"
-                               GetCellTextCSS="@GetCellTextCSS"
-                               NotesTextClass="@GetNotesTextCSS(false)"
-                               IsNumberDisabled="@IsNumberPadButtonDisabled" />
-        }
-    </div>
+<button class="m-4 px-4 py-2 rounded bg-brandBackground hover:bg-brandBackgroundHover text-foregroundOnBrand" @onclick="() => showOptionsModal = true">New Game</button>
 
-    <!-- Statistics Modal -->
-    <StatisticsModal IsVisible="@showStatistics"
-                     Statistics="@gameStatistics"
-                     OnClose="@(() => showStatistics = false)"
-                     OnClearStats="@(() => showConfirmClearStats = true)" />
+@if (board is null)
+{
+    <LoadingScreen />
+}
+else
+{
+    <SudokuGrid Board="board" />
+    <GameControls OnNewGame="() => showOptionsModal = true" />
+}
 
-    <!-- Clear Stats Confirmation Modal -->
-    <ConfirmationModal IsVisible="@showConfirmClearStats"
-                       Title="Clear All Statistics?"
-                       Message="This will permanently delete all your game statistics, scores, and progress. This action cannot be undone."
-                       CancelText="Cancel"
-                       ConfirmText="Yes, Clear All"
-                       OnCancel="@(() => showConfirmClearStats = false)"
-                       OnConfirm="@ClearStatsAsync" />
+@code {
+    private SudokuBoard? board;
+    private bool showOptionsModal;
 
-    <!-- Victory Modal -->
-    <VictoryModal IsVisible="@isGameWon"
-                  Score="@currentScore"
-                  ElapsedTime="@elapsedTime"
-                  WrongGuessCount="@wrongGuessCount"
-                  HintCount="@hintCount"
-                  Difficulty="@selectedDifficulty"
-                  OnPlayAgain="@GenerateNewGame" />
-
-    <!-- Game Over Modal -->
-    <GameOverModal IsVisible="@isGameOver"
-                   OnTryAgain="@GenerateNewGame" />
-</div>
+    private async Task CreateNewGameAsync(PuzzleOptions options)
+    {
+        showOptionsModal = false;
+        board = await PuzzleGenerator.GeneratePuzzleAsync(options);
+        StateHasChanged();
+    }
+}
 

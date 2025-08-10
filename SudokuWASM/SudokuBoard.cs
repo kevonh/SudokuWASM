@@ -6,18 +6,21 @@ namespace Sudoku
 {
     public class SudokuBoard
     {
-        public int[,] Grid { get; private set; } = new int[9, 9];
-        public int[,] Solution { get; private set; } = new int[9, 9]; // Store the complete solution
+        public int[,] Grid { get; set; } = new int[9, 9];
+        public int[,] Solution { get; set; } = new int[9, 9]; // Store the complete solution
         public bool[,] FixedCells { get; private set; } = new bool[9, 9];
         public HashSet<int>[,] Notes { get; private set; } = new HashSet<int>[9, 9];
         private static Random rng = new Random();
         public bool[,] HintCells { get; private set; } = new bool[9, 9];
         public bool[,] CorrectlySolvedCells { get; private set; } = new bool[9, 9]; // Track correctly solved cells
 
-        public SudokuBoard()
+        public SudokuBoard(bool skipGeneration = false)
         {
             InitializeNotes();
-            GenerateNewPuzzle();
+            if (!skipGeneration)
+            {
+                GenerateNewPuzzle();
+            }
         }
 
         private void InitializeNotes()
