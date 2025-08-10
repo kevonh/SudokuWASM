@@ -188,4 +188,145 @@ public partial class SudokuGame
         message = "Game resumed";
         StateHasChanged();
     }
+
+    // Called by the modal when the user starts a new game.
+    // Accepts PuzzleOptions from GameOptionsModal and generates a new puzzle.
+    private async Task CreateNewGameAsync(PuzzleOptions options)
+    {
+        // Map difficulty back to string for storage; adjust as needed.
+        selectedDifficulty = options.Difficulty switch
+        {
+            DifficultyLevel.Easy => "Easy",
+            DifficultyLevel.Medium => "Medium",
+            DifficultyLevel.Hard => "Hard",
+            DifficultyLevel.Expert => "Expert",
+            _ => "Medium"
+        };
+        showOptionsModal = false;
+        await InitializeNewGameAsync();
+    }
+
+    // Toggles the visibility of the New Game options modal.
+    private void ToggleOptionsModal(bool value)
+    {
+        showOptionsModal = value;
+        StateHasChanged();
+    }
+
+    // Handles click on the Sudoku grid’s background (e.g. deselect a cell).
+    private void OnGridClick()
+    {
+        selectedCell = null;
+        StateHasChanged();
+    }
+
+    // Handles click on an individual cell (tuple wrapper used by the Razor file).
+    private void OnCellClickTuple((int row, int col) cell)
+    {
+        OnCellClick(cell.row, cell.col);
+    }
+
+    // Handles click on a row/column cell.  Selects the cell and clears any message.
+    private void OnCellClick(int row, int col)
+    {
+        if (board == null || isGamePaused) return;
+        selectedCell = (row, col);
+        message = string.Empty;
+        StateHasChanged();
+    }
+
+    // Compute CSS classes for each cell based on selection and wrong guesses.
+    private string GetCellCSS(int row, int col)
+    {
+        if (board == null) return "";
+        var styling = new Sudoku.Services.CellStylingService(board, wrongCells, selectedCell, false);
+        return styling.GetCellCSS(row, col);
+    }
+
+    private string GetCellTextCSS(int row, int col)
+    {
+        if (board == null) return "";
+        var styling = new Sudoku.Services.CellStylingService(board, wrongCells, selectedCell, false);
+        return styling.GetCellTextCSS(row, col);
+    }
+
+    private string GetNotesTextCSS(bool isMobile)
+    {
+        if (board == null) return "";
+        var styling = new Sudoku.Services.CellStylingService(board, wrongCells, selectedCell, isMobile);
+        return styling.GetNotesTextCSS();
+    }
+
+    // Show/hide statistics modal.
+    private Task ShowStatisticsAsync()
+    {
+        showStatistics = true;
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private void HideStatistics()
+    {
+        showStatistics = false;
+        StateHasChanged();
+    }
+
+    // Confirmation dialog logic for clearing stats.
+    private void RequestClearStats()
+    {
+        showConfirmClearStats = true;
+        StateHasChanged();
+    }
+
+    private Task ConfirmClearStats()
+    {
+        showConfirmClearStats = false;
+        // Reset gameStatistics to initial values; replace with real persistence if needed.
+        gameStatistics = new GameStatistics();
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    // Game actions
+    private void Undo()
+    {
+        // TODO: Implement undo logic.  For now, leave it empty to satisfy the compiler.
+    }
+
+    private void Erase()
+    {
+        if (!CanEditSelectedCell || board == null) return;
+        var (row, col) = selectedCell!.Value;
+        board.Grid[row, col] = 0;
+        board.CorrectlySolvedCells[row, col] = false;
+        wrongCells[row, col] = false;
+        StateHasChanged();
+    }
+
+    private void TogglePencilMode()
+    {
+        pencilMode = !pencilMode;
+        StateHasChanged();
+    }
+
+    private void GiveHint()
+    {
+        if (board == null || isGamePaused) return;
+
+        // Simple hint: fill the first empty cell with the solution value.
+        for (int r = 0; r < 9; r++)
+        {
+            for (int c = 0; c < 9; c++)
+            {
+                if (board.Grid[r, c] == 0)
+                {
+                    board.Grid[r, c] = board.Solution[r, c];
+                    board.CorrectlySolvedCells[r, c] = true;
+                    hintCount++;
+                    StateHasChanged();
+                    return;
+                }
+            }
+        }
+    }
 }
