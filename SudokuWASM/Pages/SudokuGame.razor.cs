@@ -8,11 +8,12 @@ namespace SudokuWASM.Pages;
 public partial class SudokuGame : IDisposable
 {
     [Inject] private IGameEngine GameEngine { get; set; } = default!;
+
     private bool showStatistics = false;
     private bool showConfirmClearStats = false;
-    private bool isInitialized = false;
-    private bool showOptionsModal = false;
     private bool isPointsAnimating = false;
+    private bool showOptionsModal = false;
+    private bool isInitialized = false;
     private const int maxWrongGuesses = 4;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
