@@ -22,7 +22,6 @@ public partial class SudokuGame : IDisposable
     private bool[,] wrongCells = new bool[9, 9];
     private (int row, int col)? selectedCell = null;
     private bool isInitialized = false;
-    private bool isLoading = true;
     private string elapsedTime = "00:00";
     private GameTimingService? gameTimingService;
     private bool pencilMode = false;
@@ -52,7 +51,6 @@ public partial class SudokuGame : IDisposable
             await LoadGameStatisticsAsync();
             await InitializeGameAsync();
             isInitialized = true;
-            isLoading = false;
             StateHasChanged();
         }
     }
@@ -520,7 +518,6 @@ public partial class SudokuGame : IDisposable
     {
         await PersistenceService.ClearAllDataAsync();
         gameStatistics = new GameStatistics();
-        showConfirmClearStats = false;
         showStatistics = false;
         message = "All statistics cleared!";
         StateHasChanged();
@@ -611,5 +608,17 @@ public partial class SudokuGame : IDisposable
     {
         showStatistics = false;
         StateHasChanged();
+    }
+
+    // Statistics clear confirmation logic
+    private void RequestClearStats()
+    {
+        showConfirmClearStats = true;
+    }
+
+    private async Task ConfirmClearStats()
+    {
+        showConfirmClearStats = false;
+        await ClearStatsAsync();
     }
 }

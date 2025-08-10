@@ -10,6 +10,23 @@
     New Game
 </button>
 
+@* Status bar with points animation *@
+@if (board is not null)
+{
+    <div class="my-4 text-center">
+        <div class="text-xl font-semibold transition-all duration-300 @(isPointsAnimating ? "animate-bounce text-green-600" : "text-gray-800")">
+            Score: @DisplayScore
+        </div>
+        <div class="text-sm text-gray-600">
+            Time: @elapsedTime • Hints: @hintCount • Wrong: @wrongGuessCount / @maxWrongGuesses
+        </div>
+        @if (!string.IsNullOrEmpty(message))
+        {
+            <div class="mt-1 text-sm text-blue-600">@message</div>
+        }
+    </div>
+}
+
 @if (board is null)
 {
     <LoadingScreen />
@@ -33,5 +50,22 @@ else
 <StatisticsModal IsVisible="showStatistics"
                  Statistics="gameStatistics"
                  OnClose="HideStatistics"
-                 OnClearStats="ClearStatsAsync" />
+                 OnClearStats="RequestClearStats" />
+
+@if (showConfirmClearStats)
+{
+    <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div class="bg-white p-4 rounded-lg shadow-lg">
+            <p class="mb-4">Are you sure you want to clear all statistics?</p>
+            <div class="flex space-x-2">
+                <button class="bg-red-500 text-white py-1 px-3 rounded" @onclick="ConfirmClearStats">
+                    Yes, clear
+                </button>
+                <button class="bg-gray-300 text-gray-700 py-1 px-3 rounded" @onclick="() => showConfirmClearStats = false">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+}
 
