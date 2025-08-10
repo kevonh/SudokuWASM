@@ -1,11 +1,14 @@
 ﻿@page "/game"
 @using Sudoku.Models
 @using SudokuWASM.Components
-@inject IPuzzleGeneratorService PuzzleGenerator
 
-<GameOptionsModal Show="showOptionsModal" OnStart="CreateNewGameAsync" OnCancel="() => showOptionsModal = false" />
+<GameOptionsModal Show="showOptionsModal" OnStart="CreateNewGameAsync"
+                  OnCancel="() => ToggleOptionsModal(false)" />
 
-<button class="m-4 px-4 py-2 rounded bg-brandBackground hover:bg-brandBackgroundHover text-foregroundOnBrand" @onclick="() => showOptionsModal = true">New Game</button>
+<button class="m-4 px-4 py-2 rounded bg-brandBackground hover:bg-brandBackgroundHover text-foregroundOnBrand"
+        @onclick="() => ToggleOptionsModal(true)">
+    New Game
+</button>
 
 @if (board is null)
 {
@@ -14,18 +17,6 @@
 else
 {
     <SudokuGrid Board="board" />
-    <GameControls OnNewGame="() => showOptionsModal = true" />
-}
-
-@code {
-    private SudokuBoard? board;
-    private bool showOptionsModal;
-
-    private async Task CreateNewGameAsync(PuzzleOptions options)
-    {
-        showOptionsModal = false;
-        board = await PuzzleGenerator.GeneratePuzzleAsync(options);
-        StateHasChanged();
-    }
+    <GameControls OnNewGame="() => ToggleOptionsModal(true)" />
 }
 

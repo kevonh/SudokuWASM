@@ -34,6 +34,7 @@ public partial class SudokuGame : IDisposable
     private string currentGameId = Guid.NewGuid().ToString();
     private bool isGamePaused = false;
     private CancellationTokenSource? generationCts;
+    private bool showOptionsModal = false;
 
     private bool CanEditSelectedCell => 
         selectedCell.HasValue && 
@@ -566,6 +567,39 @@ public partial class SudokuGame : IDisposable
     {
         var stylingService = new Sudoku.Services.CellStylingService(board, wrongCells, selectedCell, isMobile);
         return stylingService.GetNotesTextCSS();
+    }
+
+    private void ToggleOptionsModal(bool show)
+    {
+        showOptionsModal = show;
+        StateHasChanged();
+    }
+
+    private async Task CreateNewGameAsync(PuzzleOptions options)
+    {
+        showOptionsModal = false;
+        generationCts?.Cancel();
+        generationCts = new CancellationTokenSource();
+
+        // Generate a puzzle with the selected options
+        board = await PuzzleGenerator.GeneratePuzzleAsync(options, generationCts.Token);
+
+        // Reset game state variables (similar to InitializeNewGameAsync)
+        wrongCells = new bool[9, 9];
+        wrongGuessCount = 0;
+        currentScore = 0;
+        hintCount = 0;
+        isGameOver = false;
+        isGameWon = false;
+        isGamePaused = true;
+        selectedCell = null;
+        pencilMode = false;
+        message = "New puzzle generated!";
+        gameTimingService?.Dispose();
+        gameTimingService = new GameTimingService(OnTimerUpdated);
+        _ = Task.Run(SaveGameStateAsync);
+
+        StateHasChanged();
     }
 
     public void Dispose()
