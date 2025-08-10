@@ -339,4 +339,14 @@ public class GameEngine : IGameEngine, IDisposable
     {
         StateChanged?.Invoke();
     }
+
+    public bool[,] WrongCells
+    {
+        get
+        {
+            var copy = new bool[9, 9];
+            Array.Copy(wrongCells, copy, wrongCells.Length);
+            return copy;
+        }
+    }
 }

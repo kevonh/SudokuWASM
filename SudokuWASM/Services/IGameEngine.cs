@@ -16,6 +16,7 @@ public interface IGameEngine
     (int row, int col)? SelectedCell { get; }
     string Message { get; }
     GameStatistics Statistics { get; }
+    bool[,] WrongCells { get; } // Expose wrong cells to UI
 
     Task InitializeGameAsync();                        // Load saved game or start new
     Task InitializeNewGameAsync(PuzzleOptions options); // Start new game with options

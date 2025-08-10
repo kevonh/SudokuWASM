@@ -9,7 +9,6 @@ public partial class SudokuGame : IDisposable
 {
     [Inject] private IGameEngine GameEngine { get; set; } = default!;
     private Sudoku.SudokuBoard? board;
-    private bool[,] wrongCells = new bool[9, 9];
     private bool showStatistics = false;
     private bool showConfirmClearStats = false;
     private bool isInitialized = false;
@@ -31,40 +30,27 @@ public partial class SudokuGame : IDisposable
     private void OnEngineStateChanged()
     {
         board = GameEngine.Board;
-        UpdateWrongCells();
         InvokeAsync(StateHasChanged);
-    }
-
-    private void UpdateWrongCells()
-    {
-        if (board == null) return;
-        for (int r = 0; r < 9; r++)
-        {
-            for (int c = 0; c < 9; c++)
-            {
-                wrongCells[r, c] = board.Grid[r, c] != 0 && board.Grid[r, c] != board.Solution[r, c];
-            }
-        }
     }
 
     private string GetCellCSS(int row, int col)
     {
         if (board == null) return "";
-        var styling = new Sudoku.Services.CellStylingService(board, wrongCells, GameEngine.SelectedCell, false);
+        var styling = new Sudoku.Services.CellStylingService(board, GameEngine.WrongCells, GameEngine.SelectedCell, false);
         return styling.GetCellCSS(row, col);
     }
 
     private string GetCellTextCSS(int row, int col)
     {
         if (board == null) return "";
-        var styling = new Sudoku.Services.CellStylingService(board, wrongCells, GameEngine.SelectedCell, false);
+        var styling = new Sudoku.Services.CellStylingService(board, GameEngine.WrongCells, GameEngine.SelectedCell, false);
         return styling.GetCellTextCSS(row, col);
     }
 
     private string GetNotesTextCSS(bool isMobile)
     {
         if (board == null) return "";
-        var styling = new Sudoku.Services.CellStylingService(board, wrongCells, GameEngine.SelectedCell, isMobile);
+        var styling = new Sudoku.Services.CellStylingService(board, GameEngine.WrongCells, GameEngine.SelectedCell, isMobile);
         return styling.GetNotesTextCSS();
     }
 
