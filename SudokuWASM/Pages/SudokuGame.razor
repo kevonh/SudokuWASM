@@ -17,6 +17,21 @@
 else
 {
     <SudokuGrid Board="board" />
-    <GameControls OnNewGame="() => ToggleOptionsModal(true)" />
+    <GameControls OnNewGame="() => ToggleOptionsModal(true)"
+                  OnShowStatistics="ShowStatisticsAsync"
+                  OnUndo="Undo"
+                  OnErase="Erase"
+                  OnTogglePencilMode="TogglePencilMode"
+                  OnGiveHint="GiveHint"
+                  IsGameDisabled="@((isGamePaused || isGameOver || isGameWon))"
+                  CanUndo="@(selectedCell != null && board != null && board.CanEditCell(selectedCell.Value.row, selectedCell.Value.col))"
+                  CanErase="@(selectedCell != null && board != null && board.CanEditCell(selectedCell.Value.row, selectedCell.Value.col))"
+                  CanGiveHint="@(board != null && !isGamePaused)"
+                  IsPencilMode="@pencilMode" />
 }
+
+<StatisticsModal IsVisible="showStatistics"
+                 Statistics="gameStatistics"
+                 OnClose="HideStatistics"
+                 OnClearStats="ClearStatsAsync" />
 

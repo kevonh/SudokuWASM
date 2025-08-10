@@ -606,4 +606,10 @@ public partial class SudokuGame : IDisposable
     {
         gameTimingService?.Dispose();
     }
+
+    private void HideStatistics()
+    {
+        showStatistics = false;
+        StateHasChanged();
+    }
 }
