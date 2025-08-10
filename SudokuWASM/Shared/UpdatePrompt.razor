@@ -1,51 +1,52 @@
+@* SudokuWASM/Shared/UpdatePrompt.razor *@
 @using Sudoku.Services
 @inject IUpdateChecker UpdateChecker
-@inject NavigationManager Navigation
-@inject IJSRuntime JS
+@inject IJSRuntime JSRuntime
 @implements IDisposable
 
-@if (showPrompt)
+@if (isUpdateAvailable)
 {
-    <div class="fixed inset-0 flex items-center justify-center bg-background/80">
-        <div class="p-6 rounded-lg shadow-lg bg-background max-w-md text-center">
-            <h2 class="text-xl font-semibold text-foreground mb-4">Update Available</h2>
-            <p class="text-foreground mb-4">A new version of Sudoku is available. Would you like to update now?</p>
-            <div class="flex justify-center space-x-4">
-                <button class="px-4 py-2 rounded bg-brandBackground hover:bg-brandBackgroundHover text-foregroundOnBrand" @onclick="UpdateNow">Update</button>
-                <button class="px-4 py-2 rounded bg-stroke hover:bg-strokeHover text-foreground" @onclick="Dismiss">Later</button>
+    <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div class="bg-white p-4 rounded-lg shadow-lg max-w-sm w-full">
+            <p class="mb-4">A new version of Sudoku is available.</p>
+            <div class="flex justify-end space-x-2">
+                <button class="bg-brandBackground hover:bg-brandBackgroundHover text-foregroundOnBrand py-1 px-3 rounded"
+                        @onclick="ReloadApp">
+                    Reload
+                </button>
+                <button class="bg-stroke hover:bg-strokeHover text-foreground py-1 px-3 rounded"
+                        @onclick="Dismiss">
+                    Later
+                </button>
             </div>
         </div>
     </div>
 }
 
 @code {
-    private bool showPrompt;
+    private bool isUpdateAvailable = false;
 
     protected override void OnInitialized()
     {
         UpdateChecker.OnUpdateAvailable += HandleUpdateAvailable;
-        // Optional: check for update on startup
-        _ = UpdateChecker.CheckForUpdateAsync();
-        _ = UpdateChecker.RegisterServiceWorkerAsync();
     }
 
     private void HandleUpdateAvailable()
     {
-        showPrompt = true;
-        InvokeAsync(StateHasChanged);
+        isUpdateAvailable = true;
+        StateHasChanged();
     }
 
-    private void UpdateNow()
+    private async Task ReloadApp()
     {
-        showPrompt = false;
-        // Send message to skip waiting and reload the page
-        JS.InvokeVoidAsync("skipWaiting");
-        Navigation.NavigateTo(Navigation.Uri, forceLoad: true);
+        await UpdateChecker.SkipWaitingAsync();
+        await JSRuntime.InvokeVoidAsync("location.reload");
     }
 
     private void Dismiss()
     {
-        showPrompt = false;
+        isUpdateAvailable = false;
+        StateHasChanged();
     }
 
     public void Dispose()

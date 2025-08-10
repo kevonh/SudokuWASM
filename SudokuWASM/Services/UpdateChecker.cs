@@ -79,6 +79,11 @@ namespace Sudoku.Services
             public string Version { get; set; } = "0.0.0";
         }
 
+        public async Task SkipWaitingAsync()
+        {
+            await jsRuntime.InvokeVoidAsync("blazorPWA.skipWaiting");
+        }
+
         public async ValueTask DisposeAsync()
         {
             if (dotNetRef is not null)
