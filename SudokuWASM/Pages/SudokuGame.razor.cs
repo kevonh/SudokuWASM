@@ -5,7 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 namespace SudokuWASM.Pages;
-public partial class SudokuGame : IDisposable
+public partial class SudokuGame 
 {
     [Inject] private IGamePersistenceService PersistenceService { get; set; } = default!;
     [Inject] private GameStatePersistenceService StatePersistenceService { get; set; } = default!;
@@ -35,9 +35,9 @@ public partial class SudokuGame : IDisposable
     private CancellationTokenSource? generationCts;
     private bool showOptionsModal = false;
 
-    private bool CanEditSelectedCell => 
-        selectedCell.HasValue && 
-        board != null && 
+    private bool CanEditSelectedCell =>
+        selectedCell.HasValue &&
+        board != null &&
         board.CanEditCell(selectedCell.Value.row, selectedCell.Value.col) &&
         !isGamePaused;
 
@@ -48,7 +48,6 @@ public partial class SudokuGame : IDisposable
         if (firstRender && !isInitialized)
         {
             await Task.Delay(1000); // Simulate loading
-            await LoadGameStatisticsAsync();
             await InitializeGameAsync();
             isInitialized = true;
             StateHasChanged();
@@ -101,12 +100,6 @@ public partial class SudokuGame : IDisposable
         // Use the persisted pause state
         isGamePaused = gameState.IsPaused;
 
-        // Only clear the board if the game is currently paused
-        if (isGamePaused)
-        {
-            ClearVisibleBoard();
-        }
-
         if (gameState.SelectedRow.HasValue && gameState.SelectedCol.HasValue)
             selectedCell = (gameState.SelectedRow.Value, gameState.SelectedCol.Value);
 
@@ -121,7 +114,7 @@ public partial class SudokuGame : IDisposable
 
     private async Task InitializeNewGameAsync()
     {
-        if (string.IsNullOrEmpty(selectedDifficulty) || !new[]{"Easy","Medium","Hard","Expert"}.Contains(selectedDifficulty))
+        if (string.IsNullOrEmpty(selectedDifficulty) || !new[] { "Easy", "Medium", "Hard", "Expert" }.Contains(selectedDifficulty))
         {
             selectedDifficulty = "Medium";
         }
@@ -153,7 +146,6 @@ public partial class SudokuGame : IDisposable
         message = "New puzzle generated!";
         gameTimingService?.Dispose();
         gameTimingService = new GameTimingService(OnTimerUpdated);
-        _ = Task.Run(SaveGameStateAsync);
         StateHasChanged();
     }
 
@@ -182,11 +174,9 @@ public partial class SudokuGame : IDisposable
     private void PauseGame()
     {
         if (board == null || isGamePaused) return;
-        _ = Task.Run(SaveGameStateAsync);
         isGamePaused = true;
         gameTimingService?.PauseTimer();
         message = "Game paused";
-        ClearVisibleBoard();
         StateHasChanged();
     }
 
@@ -197,413 +187,5 @@ public partial class SudokuGame : IDisposable
         gameTimingService?.ResumeTimer();
         message = "Game resumed";
         StateHasChanged();
-    }
-
-    private void ClearVisibleBoard()
-    {
-        if (board == null) return;
-        for (int r = 0; r < 9; r++)
-        {
-            for (int c = 0; c < 9; c++)
-            {
-                if (!board.FixedCells[r, c])
-                {
-                    board.Grid[r, c] = 0;
-                    board.Notes[r, c].Clear();
-                }
-            }
-        }
-    }
-
-    private void OnGridClick()
-    {
-        if (isGamePaused)
-        {
-            ResumeGame();
-        }
-    }
-
-    private int GetDifficultyClues(string difficulty) => difficulty switch
-    {
-        "Easy" => 45,
-        "Medium" => 35,
-        "Hard" => 25,
-        "Expert" => 20,
-        _ => 35
-    };
-
-    private void OnCellClick(int row, int col)
-    {
-        if (board == null || isGameOver || isGameWon) return;
-        if (isGamePaused)
-        {
-            ResumeGame();
-            return;
-        }
-        selectedCell = (row, col);
-        _ = Task.Run(SaveGameStateAsync);
-        StateHasChanged();
-    }
-
-    private void OnCellClickTuple((int row, int col) cellCoordinates)
-    {
-        OnCellClick(cellCoordinates.row, cellCoordinates.col);
-    }
-
-    private void OnNumberClick(int number)
-    {
-        if (pencilMode)
-            OnNumberPadClick(number);
-        else
-            PlaceNumber(number);
-    }
-
-    private void OnNumberPadClick(int number)
-    {
-        if (board == null || selectedCell == null || isGameOver || isGameWon || isGamePaused) return;
-        var (row, col) = selectedCell.Value;
-        if (!board.CanEditCell(row, col)) return;
-        if (pencilMode)
-        {
-            board.ToggleNote(row, col, number);
-        }
-        else
-        {
-            PlaceNumber(number);
-        }
-        _ = Task.Run(SaveGameStateAsync);
-        StateHasChanged();
-    }
-
-    private void PlaceNumber(int number)
-    {
-        if (board == null || selectedCell == null || isGameOver || isGameWon || isGamePaused) return;
-        var (row, col) = selectedCell.Value;
-        if (!board.CanEditCell(row, col)) return;
-        gameTimingService?.RecordMove();
-        if (board.IsCorrectMove(row, col, number))
-        {
-            board.SetCell(row, col, number);
-            board.ClearNotes(row, col);
-            currentScore += GetPointsForMove();
-            message = $"+{GetPointsForMove()} points!";
-            wrongCells[row, col] = false;
-            _ = Task.Run(AnimatePointsAsync);
-            if (board.IsComplete())
-            {
-                isGameWon = true;
-                gameTimingService?.StopTimer();
-                message = "Puzzle Complete!";
-                _ = Task.Run(async () => {
-                    await RecordCompletedGameAsync();
-                    await UpdateStatisticsAsync();
-                    await PersistenceService.DeleteGameStateAsync();
-                });
-            }
-            else
-            {
-                _ = Task.Run(SaveGameStateAsync);
-            }
-        }
-        else
-        {
-            board.SetCell(row, col, number);
-            board.ClearNotes(row, col);
-            wrongGuessCount++;
-            wrongCells[row, col] = true;
-            currentScore = Math.Max(0, currentScore - 5);
-            message = "Wrong move! (-5 points)";
-            if (wrongGuessCount >= maxWrongGuesses)
-            {
-                isGameOver = true;
-                gameTimingService?.StopTimer();
-                message = "Game Over!";
-                _ = Task.Run(async () => {
-                    await RecordCompletedGameAsync();
-                    await UpdateStatisticsAsync();
-                    await PersistenceService.DeleteGameStateAsync();
-                });
-            }
-            else
-            {
-                _ = Task.Run(SaveGameStateAsync);
-            }
-        }
-        StateHasChanged();
-    }
-
-    private async Task SaveGameStateAsync()
-    {
-        if (board == null || gameTimingService == null || isGameOver || isGameWon) return;
-        try
-        {
-            var gameState = StatePersistenceService.CreateGameState(
-                board,
-                currentGameId,
-                selectedDifficulty,
-                wrongGuessCount,
-                hintCount,
-                currentScore,
-                isGameOver,
-                isGameWon,
-                pencilMode,
-                wrongCells,
-                selectedCell,
-                gameTimingService,
-                isGamePaused
-            );
-            await PersistenceService.SaveGameStateAsync(gameState);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error saving game state: {ex.Message}");
-        }
-    }
-
-    private async Task RecordCompletedGameAsync()
-    {
-        if (gameTimingService == null) return;
-        var completedGame = new CompletedGame
-        {
-            Id = currentGameId,
-            Difficulty = selectedDifficulty,
-            Score = currentScore,
-            CompletionTime = gameTimingService.GetTotalElapsed(),
-            HintsUsed = hintCount,
-            WrongMoves = wrongGuessCount,
-            IsPerfect = wrongGuessCount == 0 && hintCount == 0,
-            CompletedAt = DateTime.Now
-        };
-        await PersistenceService.RecordCompletedGameAsync(completedGame);
-    }
-
-    private int GetPointsForMove()
-    {
-        return selectedDifficulty switch
-        {
-            "Easy" => 5,
-            "Medium" => 10,
-            "Hard" => 15,
-            "Expert" => 20,
-            _ => 10
-        };
-    }
-
-    private async Task AnimatePointsAsync()
-    {
-        isPointsAnimating = true;
-        StateHasChanged();
-        await Task.Delay(500);
-        isPointsAnimating = false;
-        StateHasChanged();
-    }
-
-    private bool IsNumberPadButtonDisabled(int number)
-    {
-        if (board == null || isGamePaused) return true;
-        int count = 0;
-        for (int r = 0; r < 9; r++)
-        {
-            for (int c = 0; c < 9; c++)
-            {
-                if (board.Grid[r, c] == number)
-                    count++;
-            }
-        }
-        return count >= 9;
-    }
-
-    private void Erase()
-    {
-        if (board == null || selectedCell == null || isGameOver || isGameWon || isGamePaused) return;
-        var (row, col) = selectedCell.Value;
-        if (board.CanEditCell(row, col))
-        {
-            board.SetCell(row, col, 0);
-            board.ClearNotes(row, col);
-            wrongCells[row, col] = false;
-            gameTimingService?.RecordMove();
-            _ = Task.Run(SaveGameStateAsync);
-            StateHasChanged();
-        }
-    }
-
-    private void Undo()
-    {
-        Erase();
-    }
-
-    private void TogglePencilMode()
-    {
-        if (isGamePaused) return;
-        pencilMode = !pencilMode;
-        message = pencilMode ? "Notes mode ON" : "Notes mode OFF";
-        _ = Task.Run(SaveGameStateAsync);
-        StateHasChanged();
-    }
-
-    private async Task LoadGameStatisticsAsync()
-    {
-        gameStatistics = await PersistenceService.LoadGameStatisticsAsync();
-    }
-
-    private async Task UpdateStatisticsAsync()
-    {
-        if (gameStatistics == null) return;
-        gameStatistics.PlayedGames++;
-        gameStatistics.TotalScore += currentScore;
-        gameStatistics.BestScore = Math.Max(gameStatistics.BestScore, currentScore);
-        gameStatistics.TotalTimePlayed += gameTimingService?.GetTotalElapsed() ?? 0;
-        if (isGameWon)
-        {
-            gameStatistics.WonGames++;
-            gameStatistics.TotalMoves += wrongGuessCount;
-            gameStatistics.AverageScore = (int)(gameStatistics.TotalScore / gameStatistics.PlayedGames);
-        }
-        else
-        {
-            gameStatistics.LostGames++;
-            gameStatistics.TotalLosses += wrongGuessCount;
-        }
-        await PersistenceService.SaveGameStatisticsAsync(gameStatistics);
-    }
-
-    private void OnOptionsButtonClick()
-    {
-        showOptionsModal = true;
-        StateHasChanged();
-    }
-
-    private void OnCloseOptions()
-    {
-        showOptionsModal = false;
-        StateHasChanged();
-    }
-
-    private void OnDifficultySelected(string difficulty)
-    {
-        if (selectedDifficulty != difficulty)
-        {
-            selectedDifficulty = difficulty;
-            _ = Task.Run(SaveGameStateAsync);
-            message = "Difficulty set to " + difficulty;
-            _ = InitializeNewGameAsync();
-        }
-        showOptionsModal = false;
-        StateHasChanged();
-    }
-
-    private async Task ClearStatisticsAsync()
-    {
-        await PersistenceService.ClearGameStatisticsAsync();
-        gameStatistics = new GameStatistics();
-        message = "Statistics cleared.";
-        StateHasChanged();
-    }
-
-    private async Task LoadSamplePuzzleAsync()
-    {
-        currentGameId = Guid.NewGuid().ToString();
-        var puzzle = SamplePuzzles.GetPuzzle(selectedDifficulty);
-        if (puzzle != null)
-        {
-            board = new Sudoku.SudokuBoard();
-            GameState.CopyToMultiArray(puzzle.Value.Grid, board.Grid);
-            GameState.CopyToMultiArray(puzzle.Value.Solution, board.Solution);
-            GameState.CopyToMultiArray(puzzle.Value.FixedCells, board.FixedCells);
-            GameState.CopyToMultiArray(puzzle.Value.HintCells, board.HintCells);
-            GameState.CopyToMultiArray(puzzle.Value.CorrectlySolvedCells, board.CorrectlySolvedCells);
-            GameState.CopyToMultiArray(puzzle.Value.WrongCells, wrongCells);
-            foreach (var kvp in puzzle.Value.Notes)
-            {
-                var parts = kvp.Key.Split(',');
-                int r = int.Parse(parts[0]);
-                int c = int.Parse(parts[1]);
-                board.Notes[r, c].Clear();
-                foreach (var note in kvp.Value)
-                    board.Notes[r, c].Add(note);
-            }
-            selectedCell = null;
-            wrongGuessCount = 0;
-            currentScore = 0;
-            hintCount = 0;
-            isGameOver = false;
-            isGameWon = false;
-            pencilMode = false;
-            message = "Loaded sample puzzle: " + puzzle.Key;
-            gameTimingService?.Dispose();
-            gameTimingService = new GameTimingService(OnTimerUpdated);
-            await Task.Run(SaveGameStateAsync);
-        }
-        else
-        {
-            message = "Failed to load sample puzzle.";
-        }
-        StateHasChanged();
-    }
-
-    private async Task HandleFileUpload(InputFileChangeEventArgs e)
-    {
-        var files = e.GetMultipleFiles();
-        foreach (var file in files)
-        {
-            try
-            {
-                var buffer = new byte[file.Size];
-                using (var stream = file.OpenReadStream())
-                {
-                    await stream.ReadAsync(buffer);
-                }
-                var json = System.Text.Encoding.UTF8.GetString(buffer);
-                var gameState = Newtonsoft.Json.JsonConvert.DeserializeObject<GameState>(json);
-                if (gameState != null)
-                {
-                    LoadGameFromState(gameState);
-                    message = "Game state loaded from file.";
-                }
-                else
-                {
-                    message = "Invalid game state file.";
-                }
-            }
-            catch (Exception ex)
-            {
-                message = "Error loading game state: " + ex.Message;
-            }
-        }
-        StateHasChanged();
-    }
-
-    private async Task HandleExportClick()
-    {
-        var gameState = StatePersistenceService.CreateGameState(
-            board,
-            currentGameId,
-            selectedDifficulty,
-            wrongGuessCount,
-            hintCount,
-            currentScore,
-            isGameOver,
-            isGameWon,
-            pencilMode,
-            wrongCells,
-            selectedCell,
-            gameTimingService,
-            isGamePaused
-        );
-        var json = Newtonsoft.Json.JsonConvert.SerializeObject(gameState, Newtonsoft.Json.Formatting.Indented);
-        var bytes = System.Text.Encoding.UTF8.GetBytes(json);
-        await using (var stream = new MemoryStream(bytes))
-        {
-            var fileName = $"sudoku_game_state_{DateTime.UtcNow:yyyyMMdd_HHmmss}.json";
-            var fileInfo = new { Name = fileName, Size = bytes.Length };
-            await PersistenceService.DownloadFileAsync(stream, fileInfo);
-        }
-    }
-
-    public void Dispose()
-    {
-        gameTimingService?.Dispose();
-        generationCts?.Cancel();
     }
 }
