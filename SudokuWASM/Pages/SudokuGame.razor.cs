@@ -8,7 +8,6 @@ namespace SudokuWASM.Pages;
 public partial class SudokuGame : IDisposable
 {
     [Inject] private IGameEngine GameEngine { get; set; } = default!;
-    private Sudoku.SudokuBoard? board;
     private bool showStatistics = false;
     private bool showConfirmClearStats = false;
     private bool isInitialized = false;
@@ -29,28 +28,30 @@ public partial class SudokuGame : IDisposable
 
     private void OnEngineStateChanged()
     {
-        board = GameEngine.Board;
         InvokeAsync(StateHasChanged);
     }
 
     private string GetCellCSS(int row, int col)
     {
-        if (board == null) return "";
-        var styling = new Sudoku.Services.CellStylingService(board, GameEngine.WrongCells, GameEngine.SelectedCell, false);
+        var b = GameEngine.Board;
+        if (b == null) return "";
+        var styling = new Sudoku.Services.CellStylingService(b, GameEngine.WrongCells, GameEngine.SelectedCell, false);
         return styling.GetCellCSS(row, col);
     }
 
     private string GetCellTextCSS(int row, int col)
     {
-        if (board == null) return "";
-        var styling = new Sudoku.Services.CellStylingService(board, GameEngine.WrongCells, GameEngine.SelectedCell, false);
+        var b = GameEngine.Board;
+        if (b == null) return "";
+        var styling = new Sudoku.Services.CellStylingService(b, GameEngine.WrongCells, GameEngine.SelectedCell, false);
         return styling.GetCellTextCSS(row, col);
     }
 
     private string GetNotesTextCSS(bool isMobile)
     {
-        if (board == null) return "";
-        var styling = new Sudoku.Services.CellStylingService(board, GameEngine.WrongCells, GameEngine.SelectedCell, isMobile);
+        var b = GameEngine.Board;
+        if (b == null) return "";
+        var styling = new Sudoku.Services.CellStylingService(b, GameEngine.WrongCells, GameEngine.SelectedCell, isMobile);
         return styling.GetNotesTextCSS();
     }
 
