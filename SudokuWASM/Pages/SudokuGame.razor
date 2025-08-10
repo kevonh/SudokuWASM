@@ -13,43 +13,43 @@
 <!-- Status bar -->
 <StatusBar IsLoading="!isInitialized"
            IsPointsAnimating="isPointsAnimating"
-           DisplayScore="@DisplayScore"
-           ElapsedTime="@elapsedTime"
-           HintCount="@hintCount"
-           WrongGuessCount="@wrongGuessCount"
-           MaxWrongGuesses="@maxWrongGuesses"
-           Message="@message" />
+           DisplayScore="@GameEngine.CurrentScore.ToString("N0")"
+           ElapsedTime="@GameEngine.ElapsedTime"
+           HintCount="@GameEngine.HintCount"
+           WrongGuessCount="@GameEngine.WrongGuessCount"
+           MaxWrongGuesses="@MaxWrongGuesses"
+           Message="@GameEngine.Message" />
 
-@if (board is null)
+@if (GameEngine.Board is null)
 {
     <LoadingScreen />
 }
 else
 {
-    <SudokuGrid Board="board"
-                IsGamePaused="isGamePaused"
+    <SudokuGrid Board="GameEngine.Board"
+                IsGamePaused="GameEngine.IsGamePaused"
                 OnGridClick="OnGridClick"
                 OnCellClick="OnCellClickTuple"
                 GetCellCSS="GetCellCSS"
                 GetCellTextCSS="GetCellTextCSS"
                 NotesTextClass="@GetNotesTextCSS(false)"
                 IsMobile="false"
-                OnResumeGame="ResumeGame" />
+                OnResumeGame="GameEngine.ResumeGame" />
     <GameControls OnNewGame="() => ToggleOptionsModal(true)"
                   OnShowStatistics="ShowStatisticsAsync"
                   OnUndo="Undo"
                   OnErase="Erase"
                   OnTogglePencilMode="TogglePencilMode"
                   OnGiveHint="GiveHint"
-                  IsGameDisabled="(isGamePaused || isGameOver || isGameWon)"
-                  CanUndo="(selectedCell != null && board != null && board.CanEditCell(selectedCell.Value.row, selectedCell.Value.col))"
-                  CanErase="(selectedCell != null && board != null && board.CanEditCell(selectedCell.Value.row, selectedCell.Value.col))"
-                  CanGiveHint="(board != null && !isGamePaused)"
-                  IsPencilMode="pencilMode" />
+                  IsGameDisabled="(GameEngine.IsGamePaused || GameEngine.IsGameOver || GameEngine.IsGameWon)"
+                  CanUndo="(GameEngine.SelectedCell != null && GameEngine.Board != null && GameEngine.Board.CanEditCell(GameEngine.SelectedCell.Value.row, GameEngine.SelectedCell.Value.col))"
+                  CanErase="(GameEngine.SelectedCell != null && GameEngine.Board != null && GameEngine.Board.CanEditCell(GameEngine.SelectedCell.Value.row, GameEngine.SelectedCell.Value.col))"
+                  CanGiveHint="(GameEngine.Board != null && !GameEngine.IsGamePaused)"
+                  IsPencilMode="GameEngine.PencilMode" />
 }
 
 <StatisticsModal IsVisible="showStatistics"
-                 Statistics="gameStatistics"
+                 Statistics="GameEngine.Statistics"
                  OnClose="HideStatistics"
                  OnClearStats="RequestClearStats" />
 

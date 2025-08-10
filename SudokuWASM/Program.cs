@@ -13,4 +13,7 @@ builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.
 builder.Services.AddScoped<IGamePersistenceService, LocalStorageGamePersistenceService>();
 builder.Services.AddScoped<GameStatePersistenceService>();
 
+// Register the modular GameEngine
+builder.Services.AddScoped<SudokuWASM.Services.IGameEngine, SudokuWASM.Services.GameEngine>();
+
 await builder.Build().RunAsync();
